@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Inversión Inteligente</title>
+
+    <link
+        rel="stylesheet"
+        href="/css/styles.css"
+    >
+</head>
+
+<body>
+
+    <main class="container">
+
+        <!-- HEADER -->
+
+        <header class="header">
+
+            <h1>Inversión Inteligente</h1>
+
+            <p>
+                Compará diferentes opciones de inversión
+                según tus objetivos y perfil de riesgo.
+            </p>
+
+        </header>
+
+
+        <!-- FORMULARIO -->
+
+        <section class="card">
+
+            <h2>¿Cuánto querés invertir?</h2>
+
+            <form id="investment-form">
+
+                <!-- CAPITAL -->
+
+                <div class="form-group">
+
+                    <label for="capital">
+                        Capital disponible
+                    </label>
+
+                    <div class="input-money">
+                        <span>$</span>
+
+                        <input
+                            type="number"
+                            id="capital"
+                            name="capital"
+                            min="1"
+                            step="0.01"
+                            placeholder="500000"
+                            required
+                        >
+                    </div>
+
+                </div>
+
+
+                <!-- PLAZO -->
+
+                <div class="form-group">
+
+                    <label for="plazo">
+                        Plazo de inversión
+                    </label>
+
+                    <select
+                        id="plazo"
+                        name="plazo"
+                        required
+                    >
+
+                        <option value="">
+                            Seleccioná un plazo
+                        </option>
+
+                        <option value="30">
+                            30 días
+                        </option>
+
+                        <option value="60">
+                            60 días
+                        </option>
+
+                        <option value="90">
+                            90 días
+                        </option>
+
+                        <option value="180">
+                            180 días
+                        </option>
+
+                        <option value="365">
+                            1 año
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- RIESGO -->
+
+                <div class="form-group">
+
+                    <label for="riesgo">
+                        Riesgo aceptable
+                    </label>
+
+                    <select
+                        id="riesgo"
+                        name="riesgo"
+                        required
+                    >
+
+                        <option value="">
+                            Seleccioná tu nivel de riesgo
+                        </option>
+
+                        <option value="bajo">
+                            Bajo
+                        </option>
+
+                        <option value="moderado">
+                            Moderado
+                        </option>
+
+                        <option value="alto">
+                            Alto
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- BOTÓN -->
+
+                <button
+                    type="submit"
+                    id="analyze-button"
+                >
+                    Analizar inversiones
+                </button>
+
+            </form>
+
+        </section>
+
+
+        <!-- LOADING -->
+
+        <section
+            id="loading"
+            class="loading hidden"
+        >
+
+            <div class="spinner"></div>
+
+            <p>
+                Analizando opciones...
+            </p>
+
+        </section>
+
+
+        <!-- RESULTADOS -->
+
+        <section
+            id="results"
+            class="results hidden"
+        >
+
+            <h2>Tu análisis</h2>
+
+            <div class="summary-card">
+
+                <p>
+                    <strong>Capital:</strong>
+                    $<span id="result-capital"></span>
+                </p>
+
+                <p>
+                    <strong>Plazo:</strong>
+                    <span id="result-plazo"></span> días
+                </p>
+
+                <p>
+                    <strong>Riesgo:</strong>
+                    <span id="result-risk"></span>
+                </p>
+
+            </div>
+
+
+            <!-- INVERSIONES -->
+
+            <h3>Opciones de inversión</h3>
+
+            <div class="investment-placeholder">
+
+                <p>
+                    Las opciones de inversión aparecerán
+                    acá cuando conectemos las APIs y la base
+                    de datos.
+                </p>
+
+            </div>
+
+
+            <!-- LLM -->
+
+            <h3>Recomendación de IA</h3>
+
+            <div class="ai-placeholder">
+
+                <p>
+                    La recomendación generada por el LLM
+                    aparecerá acá.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- ERROR -->
+
+        <div
+            id="error-message"
+            class="error hidden"
+        ></div>
+
+    </main>
+
+
+    <script src="/js/app.js"></script>
+
+</body>
+</html>
