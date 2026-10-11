@@ -1,0 +1,7 @@
+services:
+
+  app:
+    build: .
+    container_name: inversion-inteligente
+    ports:
+      - "8000:8000"
