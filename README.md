@@ -37,3 +37,90 @@ Desde la carpeta raíz:
 
 ```bash
 docker compose up --build
+```
+
+Abrir http://localhost:8000. La documentación de la API está en
+http://localhost:8000/docs. Para detener el servicio, usar `Ctrl+C`.
+
+## Deploy en Render con Docker
+
+El backend y el frontend se publican juntos como un único Web Service.
+Render construye el Dockerfile; no ejecuta docker-compose.yml.
+
+1. Subir los cambios de Dockerfile, .dockerignore y README.md a GitHub.
+2. En Render, elegir **New > Web Service**, seleccionar **Git Provider**
+   y conectar GitHub con acceso a este repositorio.
+3. Seleccionar el repositorio y configurar:
+
+   | Campo | Valor |
+   | --- | --- |
+   | Name | Un nombre disponible, por ejemplo `inversion-inteligente` |
+   | Branch | `main` |
+   | Language / Runtime | `Docker` |
+   | Root Directory | Vacío (raíz del repositorio) |
+   | Dockerfile Path | `./Dockerfile` |
+   | Docker Build Context | `.` (si aparece el campo) |
+   | Docker Command | Vacío; utilizar el CMD de la imagen |
+   | Instance Type | `Free` para una demostración con las limitaciones indicadas abajo |
+   | Health Check Path | `/` |
+   | Auto-Deploy | `On Commit` |
+
+4. Crear el servicio y revisar el build y los logs de ejecución.
+5. Abrir la URL HTTPS asignada por Render y realizar las pruebas siguientes.
+
+Render proporciona la variable `PORT`, que utiliza el comando del Dockerfile.
+En Docker local, si no se define esa variable, se utiliza el puerto 8000.
+`PYTHONUNBUFFERED=1` está definido en la imagen para mostrar los logs de Python
+inmediatamente. La aplicación actual no requiere API keys ni otras variables.
+Mantener un único worker y una instancia para evitar duplicar el scheduler.
+
+El health check en `/` comprueba que la web responde, pero no verifica la
+disponibilidad de datos en SQLite ni el éxito de las consultas externas.
+
+### Caché y ejecución del job en el plan gratuito
+
+SQLite contiene catálogos de tasas y fondos; no almacena los inputs del usuario.
+En el contenedor, la caché se crea en `/main/investments.db` durante el startup.
+Render Free pierde los archivos locales al reiniciar, redeployar o suspender
+el servicio. La aplicación reconstruye la caché consultando las fuentes.
+
+El servicio gratuito se suspende después de 15 minutos sin tráfico entrante.
+Mientras está suspendido, el job no se ejecuta. Al volver a arrancar, se lanza
+una sincronización inicial; las siguientes se ejecutan cada hora mientras
+el proceso permanezca activo. Este plan no garantiza consultas horarias
+continuas. Si ese requisito es obligatorio, utilizar una instancia siempre
+activa de pago. Un disco persistente también requiere configurar la ruta de
+SQLite en el backend; agregar un disco por sí solo no conserva la caché actual.
+
+### Verificar el deploy
+
+- Abrir `/` y comprobar que se muestran el formulario, estilos y resultados.
+- Abrir `/docs` y ejecutar `POST /api/analyze` con este cuerpo:
+
+  ```json
+  {"capital": 500000, "plazo": 30, "riesgo": "bajo"}
+  ```
+
+- Esperar una respuesta 200 con opciones y recomendación después de cargar
+  la caché. Un 503 inicial indica que todavía no hay datos utilizables.
+- Revisar los logs de sincronización y los mensajes `[JOB ERROR]`.
+  El mensaje "Sincronización completada" por sí solo no confirma que ambas
+  fuentes hayan funcionado. Verificar que los resultados incluyan datos de
+  ArgentinaDatos y CompararFondos usando un perfil de riesgo adecuado.
+- Comprobar que el análisis funciona en solicitudes sucesivas: el endpoint
+  lee los catálogos almacenados en SQLite.
+- Con el servicio activo durante una hora, comprobar una nueva ejecución
+  del background job en los logs.
+- Subir o mergear un cambio autorizado a `main` y comprobar el deploy
+  automático del nuevo commit y la recuperación de la caché.
+- Antes de presentar el TP, abrir la URL con anticipación y comprobar un
+  análisis completo, ya que el arranque desde suspensión puede demorar.
+
+La integración con GitHub permite build y deploy automático sin agregar
+GitHub Actions. Estas instrucciones preparan el despliegue; la URL pública
+y el resultado de las pruebas deben registrarse una vez realizado.
+
+Documentación oficial: [Web Services](https://render.com/docs/web-services),
+[Health Checks](https://render.com/docs/health-checks),
+[Deploys](https://render.com/docs/deploys) y
+[Free instances](https://render.com/docs/free).
