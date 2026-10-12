@@ -1,16 +1,27 @@
+"""API principal de Inversion Inteligente.
+
+El archivo esta organizado por responsabilidad: configuracion, persistencia,
+fuentes externas, dominio, ciclo de vida, API y archivos estaticos.
+"""
+
 import asyncio
-from contextlib import asynccontextmanager
-from pathlib import Path
+import re
 import sqlite3
 import unicodedata
-import re
+from contextlib import asynccontextmanager
+from pathlib import Path
+
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-# Datos de las fuentes que alimentan la aplicación.
+# ============================================================================
+# CONFIGURACION Y CATALOGOS
+# ============================================================================
+
+# URLs de las fuentes que alimentan la aplicacion.
 FIXED_DEPOSIT_API_URL = (
     "https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo/"
 )
@@ -43,6 +54,11 @@ FUND_BANK_ALIASES = {
     "BANCO SANTANDER": "Banco Santander",
     "BBVA": "BBVA",
 }
+
+
+# ============================================================================
+# PERSISTENCIA LOCAL (SQLITE)
+# ============================================================================
 
 def init_db():
     """Create the local cache used by the API and migrate older columns."""
@@ -292,9 +308,9 @@ def get_investment_data() -> tuple[list[dict], list[dict], list[dict]]:
     conn.close()
     return rates, fixed_terms, funds
 
-# =========================
-# 3. BACKGROUND JOBS CONCURRENTES
-# =========================
+# ============================================================================
+# SINCRONIZACION CON FUENTES EXTERNAS
+# ============================================================================
 
 async def sync_fixed_deposits(client: httpx.AsyncClient):
     """Sync official bank rates and terms from ArgentinaDatos."""
@@ -398,6 +414,11 @@ async def sync_fci(client: httpx.AsyncClient):
     except Exception as e:
         print(f"[JOB ERROR] FCI: {e}")
 
+
+# ============================================================================
+# REGLAS DE NEGOCIO Y NORMALIZACION
+# ============================================================================
+
 def bank_for_fund(item: dict) -> str | None:
     text = unicodedata.normalize(
         "NFKD",
@@ -450,9 +471,9 @@ async def background_sync_all():
                 print(f"[JOB ERROR] Sincronización: {resultado}")
     print("[BACKGROUND JOB] Sincronización completada.")
 
-# =========================
-# 4. CICLO DE VIDA (LIFESPAN)
-# =========================
+# ============================================================================
+# TAREAS PROGRAMADAS Y CICLO DE VIDA
+# ============================================================================
 
 scheduler = AsyncIOScheduler()
 
@@ -473,9 +494,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# =========================
-# 5. MODELOS Y ENDPOINTS
-# =========================
+# ============================================================================
+# MODELOS DE LA API Y ENDPOINTS
+# ============================================================================
 
 class InvestmentRequest(BaseModel):
     capital: float = Field(gt=0)
@@ -632,9 +653,9 @@ async def analyze_investment(data: InvestmentRequest):
         plazos_fijos=selected_terms,
     )
 
-# =========================
-# 6. ARCHIVOS ESTÁTICOS FRONTEND
-# =========================
+# ============================================================================
+# ARCHIVOS ESTATICOS DEL FRONTEND
+# ============================================================================
 
 frontend_path = Path(__file__).resolve().parent.parent / "frontend"
 app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")

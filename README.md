@@ -14,6 +14,26 @@ según el capital disponible, plazo y nivel de riesgo aceptable.
 - JavaScript
 - Docker
 
+## Organización del código
+
+La aplicación está separada en dos capas simples:
+
+- `backend/main.py`: API FastAPI y reglas de negocio. Dentro del archivo, los
+	bloques siguen este orden: configuración y catálogos, persistencia SQLite,
+	sincronización con APIs externas, normalización y reglas de riesgo, tareas
+	programadas, ciclo de vida, modelos/endpoints y archivos estáticos.
+- `frontend/index.html`: estructura semántica de la pantalla, agrupada en
+	formulario, estados de carga, resultados y errores.
+- `frontend/js/app.js`: comportamiento de la interfaz. El estado se declara al
+	principio; luego aparecen navegación, consulta al backend, renderizado,
+	formateo y manejo de errores.
+- `frontend/css/styles.css`: estilos agrupados por base, formulario, controles,
+	resultados, tarjetas, estados y responsive.
+
+Los comentarios marcan límites entre responsabilidades. Cuando se agregue una
+funcionalidad nueva, conviene colocarla en su bloque correspondiente y evitar
+mezclar consultas, cálculos y presentación en la misma función.
+
 ## Fuentes de datos
 
 - **Plazos fijos:** ArgentinaDatos (`/v1/finanzas/tasas/plazoFijo/`).
