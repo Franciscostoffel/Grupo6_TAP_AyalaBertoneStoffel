@@ -5,6 +5,14 @@
 Sistema web para comparar diferentes opciones de inversión
 según el capital disponible, plazo y nivel de riesgo aceptable.
 
+## Aplicación en la nube
+
+- Web: [Inversión Inteligente](https://inversion-inteligente-u4se.onrender.com/).
+- API: [Documentación interactiva](https://inversion-inteligente-u4se.onrender.com/docs).
+
+El servicio utiliza Render Free. Después de un período de inactividad, el
+primer acceso puede demorar mientras el servicio arranca y reconstruye su caché.
+
 ## Tecnologías
 
 - Python
