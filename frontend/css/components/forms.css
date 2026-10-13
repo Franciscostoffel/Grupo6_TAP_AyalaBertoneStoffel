@@ -1,0 +1,262 @@
+/* ============================================================================
+    FORMULARIOS
+============================================================================ */
+
+.form-group {
+    margin-bottom: 24px;
+    border: none;
+}
+
+.form-group > label,
+.form-group legend {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+}
+
+/* Los radios se ocultan visualmente pero siguen siendo accesibles. */
+.segmented input,
+.risk-option input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+
+/* ----------------------------------------------------------------------------
+    Campo de dinero con prefijo "$" y montos sugeridos
+---------------------------------------------------------------------------- */
+
+.input-money {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.input-money:focus-within {
+    border-color: var(--primary);
+    box-shadow: var(--focus-ring);
+}
+
+.input-money span {
+    padding-left: 14px;
+    color: var(--text-3);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.input-money input {
+    padding: 12px 14px 12px 8px;
+    border: none;
+    background: transparent;
+    font-size: 20px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.input-money input:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+.input-money input::placeholder {
+    color: var(--text-3);
+    font-weight: 400;
+    opacity: 0.6;
+}
+
+.quick-amounts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+
+/* ----------------------------------------------------------------------------
+    Control segmentado (plazo)
+---------------------------------------------------------------------------- */
+
+.segmented {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-2);
+}
+
+.segmented label {
+    position: relative;
+    cursor: pointer;
+}
+
+.segmented span {
+    display: block;
+    padding: 9px 4px;
+    border-radius: var(--radius-sm);
+    color: var(--text-2);
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.segmented label:hover span {
+    color: var(--text);
+}
+
+.segmented input:checked + span {
+    background: var(--surface);
+    color: var(--primary-text);
+    font-weight: 600;
+    box-shadow: var(--shadow-raised);
+}
+
+.segmented input:focus-visible + span {
+    box-shadow: var(--focus-ring);
+}
+
+
+/* ----------------------------------------------------------------------------
+    Tarjetas de seleccion de riesgo
+---------------------------------------------------------------------------- */
+
+.risk-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.risk-option {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+
+.risk-option:hover {
+    border-color: var(--border-strong);
+}
+
+.risk-option:has(input:checked) {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.risk-option:has(input:focus-visible) {
+    box-shadow: var(--focus-ring);
+}
+
+.risk-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 14px;
+}
+
+.risk-content strong {
+    margin-top: 8px;
+    font-size: 15px;
+}
+
+.risk-content small {
+    color: var(--text-3);
+    font-size: 12.5px;
+    line-height: 1.35;
+}
+
+/* Indicador de tres barras: se pintan 1, 2 o 3 segun el nivel. */
+.risk-meter {
+    display: flex;
+    gap: 3px;
+}
+
+.risk-meter i {
+    width: 14px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--border);
+}
+
+.risk-option[data-risk="bajo"] { --risk-color: var(--risk-bajo); }
+.risk-option[data-risk="moderado"] { --risk-color: var(--risk-moderado); }
+.risk-option[data-risk="alto"] { --risk-color: var(--risk-alto); }
+
+.risk-option[data-risk="bajo"] .risk-meter i:nth-child(-n+1),
+.risk-option[data-risk="moderado"] .risk-meter i:nth-child(-n+2),
+.risk-option[data-risk="alto"] .risk-meter i {
+    background: var(--risk-color);
+}
+
+
+/* ----------------------------------------------------------------------------
+    Validacion
+---------------------------------------------------------------------------- */
+
+.form-group.invalid .input-money,
+.form-group.invalid .segmented,
+.form-group.invalid .risk-option {
+    border-color: var(--danger-text);
+}
+
+.form-group.invalid .input-money:focus-within {
+    box-shadow: 0 0 0 3px var(--danger-border);
+}
+
+
+@media (max-width: 680px) {
+    .segmented span {
+        padding: 10px 2px;
+        font-size: 13px;
+    }
+
+    .risk-options {
+        grid-template-columns: 1fr;
+    }
+
+    .risk-content {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        align-items: center;
+        column-gap: 12px;
+        padding: 12px 14px;
+    }
+
+    .risk-content .risk-meter {
+        grid-row: span 2;
+        flex-direction: column-reverse;
+        gap: 2px;
+    }
+
+    .risk-meter i {
+        width: 18px;
+        height: 4px;
+    }
+
+    .risk-content strong {
+        margin-top: 0;
+    }
+}

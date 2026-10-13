@@ -1,0 +1,148 @@
+/* ============================================================================
+    BOTONES
+============================================================================ */
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 18px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    font: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
+}
+
+.btn:active:not(:disabled) {
+    transform: translateY(1px);
+}
+
+.btn:disabled {
+    opacity: 0.75;
+    cursor: progress;
+}
+
+.btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+
+/* ----------------------------------------------------------------------------
+    Variantes
+---------------------------------------------------------------------------- */
+
+.btn-primary {
+    background: var(--primary);
+    color: var(--on-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+}
+
+.btn-ghost {
+    padding: 8px 14px;
+    border-color: var(--border);
+    background: var(--surface);
+    color: var(--text-2);
+    font-size: 14px;
+}
+
+.btn-ghost:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.btn-block {
+    width: 100%;
+    min-height: 50px;
+    font-size: 16px;
+}
+
+.btn-arrow {
+    transition: transform 0.15s;
+}
+
+.btn-primary:hover:not(:disabled) .btn-arrow {
+    transform: translateX(3px);
+}
+
+
+/* ----------------------------------------------------------------------------
+    Estado de carga: spinner en lugar de la flecha
+---------------------------------------------------------------------------- */
+
+.btn-spinner {
+    display: none;
+    width: 18px;
+    height: 18px;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+.btn.is-loading .btn-spinner {
+    display: inline-block;
+}
+
+.btn.is-loading .btn-arrow {
+    display: none;
+}
+
+
+/* ----------------------------------------------------------------------------
+    Boton cuadrado con icono
+---------------------------------------------------------------------------- */
+
+.icon-button {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-2);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.icon-button:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.icon-button svg {
+    width: 18px;
+    height: 18px;
+}
+
+
+/* ----------------------------------------------------------------------------
+    Chip (montos sugeridos)
+---------------------------------------------------------------------------- */
+
+.chip {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-2);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.chip:hover {
+    border-color: var(--primary);
+    color: var(--primary-text);
+}

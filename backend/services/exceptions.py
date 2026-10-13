@@ -1,17 +1,17 @@
-"""Errores de los servicios. La capa API los traduce a respuestas HTTP."""
+"""Errores que puede dar el análisis.
+
+El servicio los lanza con "raise" y la ruta de la API los convierte en una
+respuesta HTTP con el código correspondiente (503, 422 o 404).
+"""
 
 
-class AnalysisError(Exception):
-    """Error esperado del análisis; el mensaje se muestra al usuario."""
+class DataNotReadyError(Exception):
+    """Todavía no hay datos en la base (se están descargando). -> HTTP 503"""
 
 
-class DataNotReadyError(AnalysisError):
-    """Todavía no hay datos sincronizados en la caché."""
+class InvalidRiskError(Exception):
+    """El riesgo no es "bajo", "moderado" ni "alto". -> HTTP 422"""
 
 
-class InvalidRiskError(AnalysisError):
-    """El nivel de riesgo recibido no es bajo, moderado ni alto."""
-
-
-class NoOptionsError(AnalysisError):
-    """Ningún producto es compatible con el riesgo elegido."""
+class NoOptionsError(Exception):
+    """Ningún producto es compatible con el riesgo elegido. -> HTTP 404"""

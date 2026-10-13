@@ -1,0 +1,44 @@
+/* ============================================================================
+    PIE DE PAGINA
+============================================================================ */
+
+.footer {
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.footer-inner {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 32px;
+    max-width: var(--content-width);
+    margin: 0 auto;
+    padding: 40px var(--page-gutter);
+}
+
+.footer .muted {
+    max-width: 44ch;
+    margin-top: 12px;
+}
+
+.footer h3 {
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.footer ul {
+    display: grid;
+    gap: 6px;
+    color: var(--text-2);
+    font-size: 14px;
+    list-style: none;
+}
+
+@media (max-width: 680px) {
+    .footer-inner {
+        grid-template-columns: 1fr;
+        gap: 24px;
+        padding-top: 32px;
+        padding-bottom: 32px;
+    }
+}

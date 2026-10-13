@@ -1,0 +1,116 @@
+/* ============================================================================
+    NAVEGACION SUPERIOR
+============================================================================ */
+
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: saturate(160%) blur(10px);
+    -webkit-backdrop-filter: saturate(160%) blur(10px);
+}
+
+.navbar-inner {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    max-width: var(--content-width);
+    height: var(--nav-height);
+    margin: 0 auto;
+    padding: 0 var(--page-gutter);
+}
+
+
+/* ----------------------------------------------------------------------------
+    Marca (tambien se usa en el pie de pagina)
+---------------------------------------------------------------------------- */
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.brand-logo {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: var(--primary);
+    color: var(--on-primary);
+}
+
+.brand-logo svg {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.4;
+}
+
+
+/* ----------------------------------------------------------------------------
+    Enlaces y cambio de tema
+---------------------------------------------------------------------------- */
+
+.nav-links {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+}
+
+.nav-links a {
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    color: var(--text-2);
+    font-size: 15px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+}
+
+.nav-links a:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+/* Muestra el sol en tema oscuro y la luna en tema claro. */
+.theme-toggle .icon-sun {
+    display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-sun {
+    display: block;
+}
+
+:root[data-theme="dark"] .theme-toggle .icon-moon {
+    display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .theme-toggle .icon-sun {
+        display: block;
+    }
+
+    :root:not([data-theme="light"]) .theme-toggle .icon-moon {
+        display: none;
+    }
+}
+
+@media (max-width: 680px) {
+    .navbar-inner {
+        gap: 12px;
+    }
+
+    .nav-links {
+        display: none;
+    }
+
+    .theme-toggle {
+        margin-left: auto;
+    }
+}

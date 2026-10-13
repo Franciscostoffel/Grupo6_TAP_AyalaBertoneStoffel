@@ -1,0 +1,181 @@
+/* ============================================================================
+    TARJETAS DE OPCIONES DE INVERSION (PLAZOS FIJOS Y FONDOS)
+============================================================================ */
+
+.option-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 14px;
+}
+
+.option-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.option-card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow);
+}
+
+.option-card.featured {
+    border-color: var(--primary);
+    box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.option-card h4 {
+    font-size: 16px;
+}
+
+.option-type {
+    margin-top: 2px;
+    color: var(--text-3);
+    font-size: 13.5px;
+}
+
+.option-name {
+    margin-top: 8px;
+    font-size: 14.5px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.option-note {
+    margin-top: 12px;
+    color: var(--text-3);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+
+/* ----------------------------------------------------------------------------
+    Etiquetas (tipo de tasa y nivel de riesgo)
+---------------------------------------------------------------------------- */
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--text-2);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.tag::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.tag-bajo { color: var(--risk-bajo); background: color-mix(in srgb, var(--risk-bajo) 12%, transparent); }
+.tag-moderado { color: var(--risk-moderado); background: color-mix(in srgb, var(--risk-moderado) 12%, transparent); }
+.tag-alto { color: var(--risk-alto); background: color-mix(in srgb, var(--risk-alto) 12%, transparent); }
+.tag-safe { color: var(--primary-text); background: var(--primary-soft); }
+
+
+/* ----------------------------------------------------------------------------
+    Valor destacado y total
+---------------------------------------------------------------------------- */
+
+.option-highlight {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 16px 0 4px;
+    padding: 14px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--surface-2);
+}
+
+.option-highlight span {
+    color: var(--text-3);
+    font-size: 13px;
+}
+
+.option-highlight strong {
+    color: var(--success);
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+}
+
+.option-total {
+    margin: 10px 0 14px;
+    color: var(--text-2);
+    font-size: 14.5px;
+}
+
+.option-total strong {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* ----------------------------------------------------------------------------
+    Detalles en filas etiqueta / valor
+---------------------------------------------------------------------------- */
+
+.option-details {
+    display: grid;
+    list-style: none;
+    border-top: 1px solid var(--border);
+    font-size: 13.5px;
+}
+
+.option-details li {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-2);
+}
+
+.option-details li span:first-child {
+    flex-shrink: 0;
+    color: var(--text-3);
+}
+
+.option-details li span:last-child {
+    color: var(--text);
+    font-weight: 500;
+    text-align: right;
+}
+
+/* Filas con texto largo: etiqueta arriba y valor debajo. */
+.option-details li.stacked {
+    flex-direction: column;
+    gap: 2px;
+}
+
+.option-details li.stacked span:last-child {
+    color: var(--text-2);
+    font-weight: 400;
+    text-align: left;
+}
+
+
+@media (max-width: 680px) {
+    .option-grid {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,6 +1,4 @@
-"""Recomendación en texto: Gemini cuando está disponible, o una local si falla."""
-
-from __future__ import annotations
+"""Arma el texto de recomendación: con Gemini si está disponible, o uno propio si falla."""
 
 import asyncio
 import json
@@ -26,16 +24,15 @@ async def get_recommendation(
     riesgo: str,
     opciones: list[EntityResult],
 ) -> str:
-    """Pide la recomendación a Gemini con un tiempo máximo de espera.
+    """Pide la recomendación a Gemini y espera como máximo 5 segundos.
 
-    La llamada a Gemini es síncrona, así que corre en otro hilo para no
-    bloquear el event loop de FastAPI mientras espera la respuesta.
+    asyncio.to_thread ejecuta la consulta en otro hilo para que el servidor
+    pueda seguir atendiendo a otros usuarios mientras espera a Gemini.
+    asyncio.wait_for corta la espera si pasa el tiempo máximo.
     """
     try:
         return await asyncio.wait_for(
-            asyncio.to_thread(
-                generar_recomendacion_gemini, capital, plazo, riesgo, opciones
-            ),
+            asyncio.to_thread(generar_recomendacion_gemini, capital, plazo, riesgo, opciones),
             timeout=RECOMMENDATION_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
@@ -49,47 +46,41 @@ def generar_recomendacion_gemini(
     riesgo: str,
     opciones: list[EntityResult],
 ) -> str:
-    """Genera una explicación breve de las opciones usando Gemini."""
+    """Le pide a Gemini un texto breve que explique la mejor opción."""
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         return RECOMENDACION_NO_CONFIGURADA
 
-    model = os.getenv("GEMINI_MODEL", GEMINI_DEFAULT_MODEL)
-    intento = 1
+    modelo = os.getenv("GEMINI_MODEL", GEMINI_DEFAULT_MODEL)
     try:
-        response_data = gemini_client.generate_content(
+        respuesta = gemini_client.generate_content(
             api_key=api_key,
-            model=model,
-            prompt=_build_prompt(capital, plazo, riesgo, opciones),
+            model=modelo,
+            prompt=armar_prompt(capital, plazo, riesgo, opciones),
         )
-        recomendacion = gemini_client.extract_text(response_data)
-        if recomendacion and any(char.isdigit() for char in recomendacion):
-            usage = response_data.get("usageMetadata", "no informado")
-            print(
-                f"[GEMINI OK] modelo={model} intento={intento} "
-                f"uso={usage}"
-            )
+        recomendacion = gemini_client.extract_text(respuesta)
+
+        # Solo aceptamos la respuesta si tiene texto y al menos un número.
+        if recomendacion and tiene_numeros(recomendacion):
+            uso = respuesta.get("usageMetadata", "no informado")
+            print(f"[GEMINI OK] modelo={modelo} intento=1 uso={uso}")
             return recomendacion
-        raise ValueError(
-            "Gemini devolvió una respuesta vacía o sin números en dígitos."
-        )
+        raise ValueError("Gemini devolvió una respuesta vacía o sin números en dígitos.")
     except Exception as error:
-        print(f"[GEMINI ERROR] modelo={model} intento={intento}: {error}")
+        print(f"[GEMINI ERROR] modelo={modelo} intento=1: {error}")
         return generar_recomendacion_local(opciones, plazo)
 
 
-def generar_recomendacion_local(
-    opciones: list[EntityResult],
-    plazo: int,
-) -> str:
-    """Recomendación determinística cuando Gemini no responde a tiempo o falla."""
-    mejor = opciones[0]
+def generar_recomendacion_local(opciones: list[EntityResult], plazo: int) -> str:
+    """Recomendación armada por nosotros cuando Gemini falla o tarda demasiado."""
+    mejor = opciones[0]  # las opciones ya vienen ordenadas de mayor a menor ganancia
     banco = mejor.banco or "no informado por la fuente"
-    tna = (
-        f", con una TNA de referencia del {mejor.tna:.2f}%"
-        if mejor.tna is not None
-        else ""
-    )
+
+    if mejor.tna is not None:
+        tna = f", con una TNA de referencia del {mejor.tna:.2f}%"
+    else:
+        tna = ""
+
     return (
         f"La opción destacada es {mejor.nombre}, banco asociado: {banco}{tna}. "
         f"Ganancia estimada: ${mejor.rendimiento:,.2f}; "
@@ -98,16 +89,20 @@ def generar_recomendacion_local(
     )
 
 
-def _build_prompt(
-    capital: float,
-    plazo: int,
-    riesgo: str,
-    opciones: list[EntityResult],
-) -> str:
-    # Se limita el contexto para evitar prompts innecesariamente grandes.
-    opciones_para_prompt = [
-        opcion.model_dump() for opcion in opciones[:GEMINI_MAX_OPTIONS_IN_PROMPT]
-    ]
+def tiene_numeros(texto: str) -> bool:
+    for caracter in texto:
+        if caracter.isdigit():
+            return True
+    return False
+
+
+def armar_prompt(capital: float, plazo: int, riesgo: str, opciones: list[EntityResult]) -> str:
+    """Arma las instrucciones que se le mandan a Gemini."""
+    # Solo mandamos las 10 mejores opciones para no hacer el texto muy largo.
+    opciones_para_prompt = []
+    for opcion in opciones[:GEMINI_MAX_OPTIONS_IN_PROMPT]:
+        opciones_para_prompt.append(opcion.model_dump())
+
     return f"""
 Actúa como un asesor financiero claro y prudente para una aplicación argentina.
 El usuario quiere invertir ${capital:,.2f} ARS durante {plazo} días y acepta un

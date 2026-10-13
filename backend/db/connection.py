@@ -1,18 +1,14 @@
-"""Acceso a la base SQLite usada como caché local."""
+"""Conexión a la base de datos SQLite que usamos como caché local."""
 
 import sqlite3
-from collections.abc import Iterator
-from contextlib import contextmanager
 
 from backend.core.config import DB_PATH
 
 
-@contextmanager
-def get_connection() -> Iterator[sqlite3.Connection]:
-    """Abre una conexión, confirma los cambios si todo salió bien y la cierra."""
-    conn = sqlite3.connect(DB_PATH)
-    try:
-        yield conn
-        conn.commit()
-    finally:
-        conn.close()
+def get_connection():
+    """Abre la base de datos.
+
+    Quien la usa debe llamar a conn.commit() si guardó algo y siempre a
+    conn.close() al terminar.
+    """
+    return sqlite3.connect(DB_PATH)

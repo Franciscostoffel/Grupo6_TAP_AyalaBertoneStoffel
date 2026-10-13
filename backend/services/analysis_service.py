@@ -1,6 +1,11 @@
-"""Análisis de inversión: filtra por riesgo, calcula rendimientos y ordena."""
+"""Análisis de inversión: es el corazón del sistema.
 
-from __future__ import annotations
+Pasos:
+1. Lee de la base de datos los plazos fijos y los fondos.
+2. Descarta los productos con más riesgo del que acepta el usuario.
+3. Calcula cuánto ganaría con cada uno según su capital y plazo.
+4. Ordena de mayor a menor ganancia y pide la recomendación de texto.
+"""
 
 from backend.core.config import FIXED_DEPOSIT_TYPE
 from backend.db.repositories import fixed_deposit_repository, fund_repository
@@ -14,139 +19,141 @@ from backend.schemas.investment import EntityResult, InvestmentRequest, Investme
 from backend.services.exceptions import DataNotReadyError, InvalidRiskError, NoOptionsError
 from backend.services.recommendation_service import get_recommendation
 
-ACCESO_APP_FONDO = (
+TEXTO_ACCESO_APP = (
     "Asociado al banco; confirmá en la app si está habilitado "
     "para tu cuenta."
 )
 
 
-async def analyze_investment(request: InvestmentRequest) -> InvestmentResponse:
-    """Arma las opciones a partir de la caché y agrega la recomendación."""
-    rates = [
-        rate for rate in fixed_deposit_repository.get_rates()
-        if rate["tipo"] == FIXED_DEPOSIT_TYPE
-    ]
-    fixed_terms = fixed_deposit_repository.get_terms()
-    funds = fund_repository.get_funds()
+async def analyze_investment(pedido: InvestmentRequest) -> InvestmentResponse:
+    """Devuelve las opciones de inversión calculadas para el pedido del usuario."""
+    # 1. Leer los datos guardados.
+    tasas = []
+    for tasa in fixed_deposit_repository.get_rates():
+        if tasa["tipo"] == FIXED_DEPOSIT_TYPE:
+            tasas.append(tasa)
+    plazos_fijos = fixed_deposit_repository.get_terms()
+    fondos = fund_repository.get_funds()
 
-    if not rates and not funds:
+    if not tasas and not fondos:
         raise DataNotReadyError(
             "La base de datos se está sincronizando. Reintente en unos segundos."
         )
 
-    riesgo = request.riesgo.strip().lower()
+    riesgo = pedido.riesgo.strip().lower()
     if not is_valid_risk(riesgo):
         raise InvalidRiskError("Nivel de riesgo inválido.")
 
-    opciones = [
-        opcion
-        for item in rates + funds
-        if (opcion := _build_option(item, request.capital, request.plazo, riesgo))
-        is not None
-    ]
-    if not opciones:
-        raise NoOptionsError(
-            "No encontramos opciones compatibles con ese nivel de riesgo."
-        )
+    # 2 y 3. Filtrar por riesgo y calcular la ganancia de cada producto.
+    opciones = []
+    for producto in tasas + fondos:
+        opcion = build_option(producto, pedido.capital, pedido.plazo, riesgo)
+        if opcion is not None:
+            opciones.append(opcion)
 
-    opciones.sort(key=lambda x: x.rendimiento, reverse=True)
-    recomendacion = await get_recommendation(
-        request.capital, request.plazo, riesgo, opciones
-    )
+    if not opciones:
+        raise NoOptionsError("No encontramos opciones compatibles con ese nivel de riesgo.")
+
+    # 4. Ordenar de mayor a menor ganancia y pedir la recomendación.
+    opciones.sort(key=obtener_ganancia, reverse=True)
+    recomendacion = await get_recommendation(pedido.capital, pedido.plazo, riesgo, opciones)
 
     return InvestmentResponse(
-        capital=request.capital,
-        plazo=request.plazo,
-        riesgo=request.riesgo,
+        capital=pedido.capital,
+        plazo=pedido.plazo,
+        riesgo=pedido.riesgo,
         opciones=opciones,
         recomendacion=recomendacion,
-        plazos_fijos=fixed_terms,
+        plazos_fijos=plazos_fijos,
     )
 
 
-# ----------------------------------------------------------------------------
-# Construcción de cada opción
-# ----------------------------------------------------------------------------
+def obtener_ganancia(opcion: EntityResult) -> float:
+    """Se usa para ordenar las opciones por ganancia."""
+    return opcion.rendimiento
 
-def _build_option(
-    item: dict,
-    capital: float,
-    plazo: int,
-    riesgo: str,
-) -> EntityResult | None:
-    """Devuelve la opción calculada, o None si supera el riesgo aceptado."""
-    es_fci = item["tipo"].startswith("FCI")
-    perfil_riesgo = (
-        fund_risk(item["tipo"].replace("FCI ", ""), item.get("horizonte"))
-        if es_fci
-        else FIXED_DEPOSIT_RISK
-    )
+
+def build_option(producto: dict, capital: float, plazo: int, riesgo: str) -> EntityResult | None:
+    """Calcula una opción. Devuelve None si el producto tiene más riesgo del aceptado."""
+    es_fondo = producto["tipo"].startswith("FCI")
+
+    if es_fondo:
+        perfil_riesgo = fund_risk(producto["tipo"].replace("FCI ", ""), producto.get("horizonte"))
+    else:
+        perfil_riesgo = FIXED_DEPOSIT_RISK
+
     if not risk_matches(riesgo, perfil_riesgo):
         return None
 
-    figures = (
-        _fund_figures(item, capital, plazo)
-        if es_fci
-        else _fixed_deposit_figures(item, capital, plazo)
-    )
-    ganancia = figures["ganancia"]
+    if es_fondo:
+        calculo = calculate_fund(producto, capital, plazo)
+        rendimiento_ultimo_dia = producto.get("rendimiento_1d")
+        if producto.get("banco"):
+            acceso_app = TEXTO_ACCESO_APP
+        else:
+            acceso_app = None
+    else:
+        calculo = calculate_fixed_deposit(producto, capital, plazo)
+        rendimiento_ultimo_dia = None
+        acceso_app = None
+
+    ganancia = calculo["ganancia"]
 
     return EntityResult(
-        nombre=item["nombre"],
-        banco=item.get("banco"),
-        tipo=item["tipo"],
-        categoria=figures["categoria"],
-        instrumento=figures["instrumento"],
-        horizonte=figures["horizonte"],
+        nombre=producto["nombre"],
+        banco=producto.get("banco"),
+        tipo=producto["tipo"],
+        categoria=calculo["categoria"],
+        instrumento=calculo["instrumento"],
+        horizonte=calculo["horizonte"],
         perfil_riesgo=perfil_riesgo,
-        tna=item["tna"],
-        rendimiento_ultimo_dia_pct=item.get("rendimiento_1d") if es_fci else None,
-        rendimiento_periodo_pct=round(figures["rendimiento_periodo_pct"], 4),
-        garantizado=item["garantizado"],
-        fuente=item["fuente"],
-        fecha_datos=item["fecha_datos"],
+        tna=producto["tna"],
+        rendimiento_ultimo_dia_pct=rendimiento_ultimo_dia,
+        rendimiento_periodo_pct=round(calculo["rendimiento_periodo_pct"], 4),
+        garantizado=producto["garantizado"],
+        fuente=producto["fuente"],
+        fecha_datos=producto["fecha_datos"],
         rendimiento=round(ganancia, 2),
         monto_final=round(capital + ganancia, 2),
-        liquidez=figures["liquidez"],
-        acceso_app=ACCESO_APP_FONDO if es_fci and item.get("banco") else None,
+        liquidez=calculo["liquidez"],
+        acceso_app=acceso_app,
     )
 
 
-def _fund_figures(item: dict, capital: float, plazo: int) -> dict:
-    """Rendimiento real de los últimos 30 días proyectado al plazo elegido."""
-    rendimiento_30d = item.get("rendimiento_30d")
-    rendimiento_periodo_pct = (
-        fund_period_return_pct(rendimiento_30d, plazo)
-        if rendimiento_30d is not None
-        else simple_period_return_pct(item["tna"], plazo)
-    )
-    plazo_liq = item.get("plazo_liq")
-    tipo_fci = item["tipo"].lower()
+def calculate_fund(fondo: dict, capital: float, plazo: int) -> dict:
+    """Ganancia de un fondo: usa su rendimiento real de los últimos 30 días."""
+    rendimiento_30d = fondo.get("rendimiento_30d")
+    if rendimiento_30d is not None:
+        porcentaje = fund_period_return_pct(rendimiento_30d, plazo)
+    else:
+        porcentaje = simple_period_return_pct(fondo["tna"], plazo)
+
+    if fondo.get("plazo_liq") is not None:
+        liquidez = f"Rescate informado: {fondo['plazo_liq']} día(s)"
+    else:
+        liquidez = "Según plazo de rescate del fondo"
+
+    tipo = fondo["tipo"].lower()
+    if "mercado de dinero" in tipo or "plazo fijo" in tipo:
+        categoria = "money_market"
+    else:
+        categoria = "fondos"
 
     return {
-        "rendimiento_periodo_pct": rendimiento_periodo_pct,
-        "ganancia": capital * rendimiento_periodo_pct / 100,
-        "liquidez": (
-            f"Rescate informado: {plazo_liq} día(s)"
-            if plazo_liq is not None
-            else "Según plazo de rescate del fondo"
-        ),
+        "rendimiento_periodo_pct": porcentaje,
+        "ganancia": capital * porcentaje / 100,
+        "liquidez": liquidez,
         "instrumento": "Fondo Común de Inversión",
-        "horizonte": item["horizonte"] or "No informado",
-        "categoria": (
-            "money_market"
-            if "mercado de dinero" in tipo_fci or "plazo fijo" in tipo_fci
-            else "fondos"
-        ),
+        "horizonte": fondo["horizonte"] or "No informado",
+        "categoria": categoria,
     }
 
 
-def _fixed_deposit_figures(item: dict, capital: float, plazo: int) -> dict:
-    """Interés simple de la TNA informada por el banco."""
-    tna = item["tna"]
+def calculate_fixed_deposit(tasa: dict, capital: float, plazo: int) -> dict:
+    """Ganancia de un plazo fijo: interés simple sobre la TNA del banco."""
     return {
-        "rendimiento_periodo_pct": simple_period_return_pct(tna, plazo),
-        "ganancia": fixed_deposit_gain(capital, tna, plazo),
+        "rendimiento_periodo_pct": simple_period_return_pct(tasa["tna"], plazo),
+        "ganancia": fixed_deposit_gain(capital, tasa["tna"], plazo),
         "liquidez": f"Al vencimiento ({plazo} días)",
         "instrumento": "Renta Fija Tradicional",
         "horizonte": f"Referencia para {plazo} días",

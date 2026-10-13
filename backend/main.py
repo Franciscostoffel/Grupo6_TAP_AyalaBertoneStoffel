@@ -1,16 +1,17 @@
 """Punto de entrada de Inversión Inteligente.
 
-Solo arma la aplicación: ciclo de vida, rutas de la API y archivos estáticos.
-La lógica está repartida en capas:
+Este archivo solo arma la aplicación. La lógica está repartida en capas:
 
-    api/       endpoints HTTP (presentación)
-    services/  casos de uso: análisis, recomendación y sincronización
-    domain/    reglas de negocio puras (riesgo, rendimientos, bancos)
-    clients/   consultas a APIs externas (ArgentinaDatos, CompararFondos, Gemini)
-    db/        conexión, esquema y repositorios de SQLite
-    schemas/   modelos de entrada y salida de la API
-    tasks/     sincronización periódica
-    core/      configuración
+    api/       recibe los pedidos HTTP del frontend
+    services/  coordina cada tarea (analizar, recomendar, sincronizar)
+    domain/    reglas de negocio y fórmulas (riesgo, rendimientos, bancos)
+    clients/   consulta APIs externas (ArgentinaDatos, CompararFondos, Gemini)
+    db/        guarda y lee datos en SQLite
+    schemas/   formato de los datos que entran y salen de la API
+    tasks/     actualización automática cada hora
+    core/      configuración (URLs, tiempos, bancos)
+
+Se ejecuta con:  uvicorn backend.main:app
 """
 
 import asyncio
@@ -27,12 +28,14 @@ from backend.services.sync_service import sync_all_sources
 from backend.tasks.scheduler import start_scheduler, stop_scheduler
 
 
+# "lifespan" es la forma que tiene FastAPI de ejecutar código al prender y al
+# apagar el servidor. Lo que está antes de "yield" corre al iniciar; lo que
+# está después, al cerrar.
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Prepara la caché, la sincroniza en segundo plano y programa las actualizaciones."""
-    init_db()
-    asyncio.create_task(sync_all_sources())
-    start_scheduler()
+    init_db()                                  # crea las tablas si no existen
+    asyncio.create_task(sync_all_sources())    # descarga los datos sin frenar el arranque
+    start_scheduler()                          # programa la descarga cada una hora
     yield
     stop_scheduler()
 
@@ -41,20 +44,22 @@ app = FastAPI(
     title="Inversión Inteligente",
     description="Comparador Concurrente con SQLite, APIs y Money Market",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
+# Rutas de la API (por ahora solo POST /api/analyze).
 app.include_router(analysis.router)
 
 
 # ============================================================================
-# ARCHIVOS ESTATICOS DEL FRONTEND
-# Se monta al final para que no tape las rutas de la API.
+# ARCHIVOS DEL FRONTEND
+# Se registra al final para que no tape las rutas de la API.
 # ============================================================================
 
-# En Windows el registro puede asociar .js a text/plain, y el navegador
-# rechaza los modulos de JavaScript servidos con ese tipo.
+# En Windows a veces los .js se envían como texto plano y el navegador los
+# rechaza. Con esto nos aseguramos de que se envíen con el tipo correcto.
 mimetypes.add_type("text/javascript", ".js")
 mimetypes.add_type("text/css", ".css")
 
+# Sirve index.html, css/ y js/ desde la carpeta frontend.
 app.mount("/", StaticFiles(directory=FRONTEND_PATH, html=True), name="frontend")

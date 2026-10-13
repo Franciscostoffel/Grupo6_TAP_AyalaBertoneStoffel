@@ -1,0 +1,102 @@
+/* ============================================================================
+    SECCION: ENCABEZADO Y SIMULADOR
+============================================================================ */
+
+.hero {
+    display: grid;
+    grid-template-columns: 1fr minmax(0, 480px);
+    gap: 56px;
+    align-items: start;
+}
+
+.hero-copy {
+    padding-top: 24px;
+}
+
+.eyebrow {
+    display: inline-block;
+    margin-bottom: 16px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: var(--primary-soft);
+    color: var(--primary-text);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.hero h1 {
+    margin-bottom: 16px;
+    font-size: clamp(34px, 5vw, 52px);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+}
+
+.hero-lead {
+    max-width: 52ch;
+    color: var(--text-2);
+    font-size: 18px;
+    line-height: 1.6;
+}
+
+
+/* ----------------------------------------------------------------------------
+    Puntos destacados con icono
+---------------------------------------------------------------------------- */
+
+.hero-points {
+    display: grid;
+    gap: 12px;
+    margin-top: 32px;
+    list-style: none;
+}
+
+.hero-points li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--text-2);
+    font-weight: 500;
+}
+
+.hero-points svg {
+    width: 36px;
+    height: 36px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    color: var(--primary-text);
+}
+
+
+@media (max-width: 900px) {
+    .hero {
+        grid-template-columns: 1fr;
+        gap: 32px;
+    }
+
+    .hero-copy {
+        padding-top: 0;
+    }
+
+    .hero-points {
+        grid-template-columns: repeat(3, auto);
+        justify-content: start;
+        gap: 12px 24px;
+    }
+}
+
+@media (max-width: 680px) {
+    .hero {
+        gap: 24px;
+    }
+
+    .hero-lead {
+        font-size: 16px;
+    }
+
+    /* En celulares se prioriza el formulario; los pasos quedan en "Cómo funciona". */
+    .hero-points {
+        display: none;
+    }
+}

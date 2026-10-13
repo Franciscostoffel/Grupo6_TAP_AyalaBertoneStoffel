@@ -1,4 +1,4 @@
-"""Registro de la última sincronización de cada fuente (tabla source_cache)."""
+"""Registra cuándo se actualizó cada fuente externa (tabla source_cache)."""
 
 import time
 
@@ -6,30 +6,36 @@ from backend.core.config import CACHE_TTL_SECONDS, SOURCE_FIXED_DEPOSITS, SOURCE
 from backend.db.connection import get_connection
 
 
-def mark_source_synced(source: str):
-    """Registra que una fuente externa se actualizó correctamente."""
-    with get_connection() as conn:
-        conn.execute("""
-            INSERT INTO source_cache (fuente, synced_at)
-            VALUES (?, CURRENT_TIMESTAMP)
-            ON CONFLICT(fuente) DO UPDATE SET synced_at = excluded.synced_at
-        """, (source,))
+def mark_source_synced(fuente: str):
+    """Anota que la fuente se actualizó bien en este momento."""
+    conn = get_connection()
+    conn.execute("""
+        INSERT INTO source_cache (fuente, synced_at)
+        VALUES (?, CURRENT_TIMESTAMP)
+        ON CONFLICT(fuente) DO UPDATE SET synced_at = excluded.synced_at
+    """, (fuente,))
+    conn.commit()
+    conn.close()
 
 
 def investment_cache_is_fresh() -> bool:
-    """Indica si las dos fuentes se sincronizaron dentro del tiempo de caché."""
-    with get_connection() as conn:
-        rows = conn.execute("""
-            SELECT fuente, synced_at
-            FROM source_cache
-            WHERE fuente IN (?, ?)
-        """, (SOURCE_FIXED_DEPOSITS, SOURCE_FUNDS)).fetchall()
+    """Devuelve True si las dos fuentes se actualizaron hace menos de una hora."""
+    conn = get_connection()
+    filas = conn.execute("""
+        SELECT fuente, synced_at
+        FROM source_cache
+        WHERE fuente IN (?, ?)
+    """, (SOURCE_FIXED_DEPOSITS, SOURCE_FUNDS)).fetchall()
+    conn.close()
 
-    if len(rows) != 2:
+    # Si alguna de las dos fuentes nunca se sincronizó, hay que actualizar.
+    if len(filas) != 2:
         return False
-    return all(
-        (time.time() - time.mktime(time.strptime(
-            synced_at, "%Y-%m-%d %H:%M:%S"
-        ))) < CACHE_TTL_SECONDS
-        for _, synced_at in rows
-    )
+
+    for fuente, synced_at in filas:
+        # Convertimos el texto "2026-10-13 14:30:00" a segundos para poder restar.
+        momento = time.mktime(time.strptime(synced_at, "%Y-%m-%d %H:%M:%S"))
+        segundos_transcurridos = time.time() - momento
+        if segundos_transcurridos >= CACHE_TTL_SECONDS:
+            return False
+    return True

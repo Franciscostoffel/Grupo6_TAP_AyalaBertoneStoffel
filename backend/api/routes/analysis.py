@@ -1,4 +1,4 @@
-"""Endpoint de análisis de inversiones."""
+"""Endpoint POST /api/analyze: lo llama el frontend al tocar "Analizar inversiones"."""
 
 from fastapi import APIRouter, HTTPException
 
@@ -8,21 +8,15 @@ from backend.services.exceptions import DataNotReadyError, InvalidRiskError, NoO
 
 router = APIRouter(prefix="/api", tags=["Análisis"])
 
-# Código HTTP que corresponde a cada error del servicio.
-ERROR_STATUS = {
-    DataNotReadyError: 503,
-    InvalidRiskError: 422,
-    NoOptionsError: 404,
-}
-
 
 @router.post("/analyze", response_model=InvestmentResponse)
 async def analyze_investment(data: InvestmentRequest):
     """Compara plazos fijos y fondos según capital, plazo y riesgo."""
     try:
         return await analysis_service.analyze_investment(data)
-    except (DataNotReadyError, InvalidRiskError, NoOptionsError) as error:
-        raise HTTPException(
-            status_code=ERROR_STATUS[type(error)],
-            detail=str(error),
-        ) from error
+    except DataNotReadyError as error:
+        raise HTTPException(status_code=503, detail=str(error))
+    except InvalidRiskError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+    except NoOptionsError as error:
+        raise HTTPException(status_code=404, detail=str(error))
