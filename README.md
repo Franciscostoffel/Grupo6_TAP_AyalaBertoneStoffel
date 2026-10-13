@@ -40,7 +40,7 @@ backend/
 │   ├── fixed_deposit_sync.py     Sincroniza plazos fijos
 │   ├── fund_sync.py              Sincroniza fondos comunes
 │   └── sync_service.py           Ejecuta ambas sincronizaciones en paralelo
-├── domain/                 Reglas de negocio puras: riesgo, rendimientos, bancos, fondos
+├── domain/                 Reglas puras: riesgo, rendimientos, tasas de plazo fijo, bancos
 ├── clients/                Consultas HTTP a ArgentinaDatos, CompararFondos y Gemini
 ├── db/                     Conexión, esquema y repositorios de SQLite
 └── tasks/scheduler.py      Sincronización programada cada hora
@@ -99,6 +99,19 @@ mezclar consultas, cálculos y presentación en la misma función.
 
 - **Plazos fijos:** ArgentinaDatos (`/v1/finanzas/tasas/plazoFijo/`).
 - **Fondos comunes de inversión:** CompararFondos (`/api/fondos`).
+- **Billeteras virtuales:** Mercado Pago y Ualá. El dinero que se deja en la
+	cuenta de estas billeteras rinde a través de fondos comunes que administran
+	ellas mismas, por eso se obtienen de la misma fuente de fondos.
+
+Cada fondo se asocia al banco o billetera dueño de su sociedad gerente (la
+empresa que lo administra), según la lista `SOCIEDADES_GERENTES` de
+`backend/core/config.py`. No se usa el banco depositario, porque un mismo banco
+custodia fondos de muchas empresas distintas.
+
+Para el plazo fijo se usa la tasa que el banco publica para el plazo elegido.
+Si no publica una para ese plazo exacto, se usa la del plazo publicado más
+cercano por debajo (la tasa general cuenta como la de 30 días) y la tarjeta
+aclara qué tasa se tomó.
 
 El backend guarda una copia local en SQLite para que el análisis no dependa de
 una consulta externa en cada solicitud. Las dos fuentes se sincronizan al iniciar la aplicación y luego cada hora.
@@ -128,17 +141,17 @@ Para que otra persona pueda usar la aplicación:
 Copy-Item .env.example .env
 ```
 
-Después deben abrir `.env`, pegar su clave en `GEMINI_API_KEY` y ejecutar:
-
-```powershell
-docker compose up --build
-```
-
-La única línea que deben modificar es:
+Después deben abrir `.env` y pegar su clave después de `GEMINI_API_KEY=`:
 
 ```env
-GEMINI_API_KEY=PEGAR_LA_API_KEY_AQUI
+GEMINI_API_KEY=tu_clave_de_google_ai_studio
 ```
+
+Con eso alcanza: la clave se toma del `.env` tanto con Docker
+(`docker compose up --build`) como sin Docker (`uvicorn backend.main:app`).
+El archivo `.env` está en `.gitignore`, así que cada integrante usa su propia
+clave y nunca se sube a GitHub. En Render, la clave se carga en el panel del
+servicio, en **Environment**, con el nombre `GEMINI_API_KEY`.
 
 El modelo predeterminado es `gemini-3.5-flash-lite`, porque esta aplicación
 solo necesita redactar una recomendación breve. Si no se configura la clave,

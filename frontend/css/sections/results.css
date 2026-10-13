@@ -279,3 +279,22 @@
         gap: 8px;
     }
 }
+
+
+/* ----------------------------------------------------------------------------
+    Notas y tabla de tasas publicadas dentro del panel
+---------------------------------------------------------------------------- */
+
+.panel-note {
+    margin-bottom: 16px;
+    color: var(--text-2);
+    font-size: 14px;
+}
+
+.rates-title {
+    margin-top: 24px;
+}
+
+.rates-list {
+    max-width: 420px;
+}

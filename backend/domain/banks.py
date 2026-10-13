@@ -1,8 +1,8 @@
-"""Reconoce a qué banco pertenece una tasa o un fondo a partir de su nombre."""
+"""Reconoce a qué banco o billetera pertenece una tasa o un fondo."""
 
 import unicodedata
 
-from backend.core.config import BANCOS_SELECCIONADOS, FUND_BANK_ALIASES
+from backend.core.config import BANCOS_SELECCIONADOS, SOCIEDADES_GERENTES
 
 
 def bank_for_entity(entidad: str) -> str | None:
@@ -18,27 +18,20 @@ def bank_for_entity(entidad: str) -> str | None:
 
 
 def bank_for_fund(fondo: dict) -> str | None:
-    """Busca el banco de un fondo en su nombre, administradora, depositaria y gestores."""
-    texto = quitar_acentos(
-        str(fondo.get("nombre", "")) + " "
-        + str(fondo.get("administradora", "")) + " "
-        + str(fondo.get("depositaria", ""))
-    ).upper()
-    texto += " " + (
-        str(fondo.get("gerente", "")) + " " + str(fondo.get("gestora", ""))
-    ).upper()
+    """Devuelve el banco o billetera dueño del fondo según su sociedad gerente.
 
-    # Primero se buscan los nombres principales y después los alternativos.
-    for clave, nombre_banco in BANCOS_SELECCIONADOS.items():
-        if quitar_acentos(clave).upper() in texto:
-            return nombre_banco
-    for clave, nombre_banco in FUND_BANK_ALIASES.items():
-        if quitar_acentos(clave).upper() in texto:
-            return nombre_banco
+    Ejemplo: gerente "Pellegrini S.A.S.G.F.C.I." -> "Banco Nación".
+    No se usa el banco "depositario" (el que guarda el dinero del fondo),
+    porque un mismo banco custodia fondos de muchas empresas distintas.
+    """
+    gerente = quitar_acentos(str(fondo.get("gerente") or "")).upper()
+    for clave, entidad in SOCIEDADES_GERENTES.items():
+        if clave in gerente:
+            return entidad
     return None
 
 
 def quitar_acentos(texto: str) -> str:
-    """Convierte "Nación" en "Nacion" para comparar sin importar los acentos."""
+    """Convierte "Ualá" en "Uala" para comparar sin importar los acentos."""
     texto_separado = unicodedata.normalize("NFKD", texto)
     return texto_separado.encode("ascii", "ignore").decode()

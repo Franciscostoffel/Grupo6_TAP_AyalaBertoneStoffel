@@ -1,13 +1,13 @@
 // ============================================================================
-// PANEL DEL BANCO SELECCIONADO
-// Muestra el nombre del banco, los botones "Plazo fijo / Fondos" y las tarjetas.
+// PANEL DEL BANCO O BILLETERA SELECCIONADO
+// Muestra el nombre, los botones "Plazo fijo / Fondos" y las tarjetas.
 // ============================================================================
 
-import { BANKS, SECTIONS } from "../config.js";
+import { BANKS, FIXED_DEPOSIT_TYPE, SECTIONS, WALLETS } from "../config.js";
 import { state } from "../state.js";
 import { escapeHtml } from "../utils/html.js";
 import { externalLinkIcon } from "./icons.js";
-import { fixedTermCard, fundCard } from "./option-cards.js";
+import { fixedDepositCard, fundCard, publishedRatesList } from "./option-cards.js";
 
 const panel = document.getElementById("bank-panel");
 
@@ -22,25 +22,40 @@ panel.addEventListener("click", (event) => {
     renderBankPanel();
 });
 
-// Dibuja el panel del banco y la sección que están guardados en state.
+// Dibuja el panel de la entidad y la sección que están guardados en state.
 export function renderBankPanel() {
-    const banco = state.selectedBank;
-    const seccion = state.selectedSection;
+    const entidad = state.selectedBank;
+    const esBilletera = isWallet(entidad);
 
-    const plazosDelBanco = state.fixedTerms.filter((plazo) => plazo.banco === banco);
-    const fondosDelBanco = state.funds.filter((fondo) => fondo.banco === banco && !fondo.garantizado);
-
-    let contenido;
-    if (seccion === SECTIONS.FIXED_TERM) {
-        contenido = fixedTermsList(banco, plazosDelBanco);
-    } else {
-        contenido = fundsList(fondosDelBanco);
+    // Opción de plazo fijo ya calculada por el backend para el plazo del usuario.
+    let opcionPlazoFijo = null;
+    for (const opcion of state.options) {
+        if (opcion.banco === entidad && opcion.tipo === FIXED_DEPOSIT_TYPE) {
+            opcionPlazoFijo = opcion;
+        }
     }
 
-    panel.innerHTML =
-        bankHeader(banco) +
-        sectionSwitcher(seccion, plazosDelBanco.length, fondosDelBanco.length) +
-        contenido;
+    // Tasas que publica el banco para cada plazo (solo informativas).
+    const tasasPublicadas = state.fixedTerms.filter((rango) => rango.banco === entidad);
+
+    // Fondos de la entidad que cumplen con el riesgo elegido (los fondos nunca están garantizados).
+    const fondos = state.options.filter((opcion) => opcion.banco === entidad && !opcion.garantizado);
+
+    let contenido;
+    if (esBilletera) {
+        // Las billeteras no tienen plazo fijo: solo se muestran sus fondos.
+        contenido = walletIntro() + fundsList(fondos);
+    } else {
+        const cantidadPlazoFijo = opcionPlazoFijo ? 1 : 0;
+        contenido = sectionSwitcher(state.selectedSection, cantidadPlazoFijo, fondos.length);
+        if (state.selectedSection === SECTIONS.FIXED_TERM) {
+            contenido += fixedDepositSection(opcionPlazoFijo, tasasPublicadas);
+        } else {
+            contenido += fundsList(fondos);
+        }
+    }
+
+    panel.innerHTML = entityHeader(entidad) + contenido;
 }
 
 
@@ -48,17 +63,17 @@ export function renderBankPanel() {
 // Partes del panel
 // ----------------------------------------------------------------------------
 
-function bankHeader(banco) {
-    const url = findBankUrl(banco);
+function entityHeader(entidad) {
+    const url = findUrl(entidad);
     let enlace = "";
     if (url) {
-        enlace = `<a class="bank-link" href="${url}" target="_blank" rel="noopener">Ir al sitio del banco ${externalLinkIcon}</a>`;
+        enlace = `<a class="bank-link" href="${url}" target="_blank" rel="noopener">Ir al sitio oficial ${externalLinkIcon}</a>`;
     }
 
     return `
         <div class="bank-header">
             <div>
-                <h4>${escapeHtml(banco)}</h4>
+                <h4>${escapeHtml(entidad)}</h4>
                 <p>Resultados calculados para el monto y plazo ingresados.</p>
             </div>
             ${enlace}
@@ -66,14 +81,32 @@ function bankHeader(banco) {
     `;
 }
 
-// Busca en config.js el sitio oficial del banco (no todos lo tienen).
-function findBankUrl(nombreBanco) {
-    for (const banco of BANKS) {
-        if (banco.name === nombreBanco) {
-            return banco.url;
+// Busca en config.js el sitio oficial del banco o billetera (no todos lo tienen).
+function findUrl(nombre) {
+    for (const entidad of BANKS.concat(WALLETS)) {
+        if (entidad.name === nombre) {
+            return entidad.url;
         }
     }
     return undefined;
+}
+
+function isWallet(nombre) {
+    for (const billetera of WALLETS) {
+        if (billetera.name === nombre) {
+            return true;
+        }
+    }
+    return false;
+}
+
+function walletIntro() {
+    return `
+        <p class="panel-note">
+            El dinero que dejás en la cuenta de esta billetera rinde a través de
+            estos fondos comunes de inversión. El rendimiento no está garantizado.
+        </p>
+    `;
 }
 
 function sectionSwitcher(seccionActiva, cantidadPlazos, cantidadFondos) {
@@ -99,26 +132,24 @@ function sectionButton(seccion, texto, cantidad, seccionActiva) {
     `;
 }
 
-function fixedTermsList(banco, plazos) {
-    if (plazos.length === 0) {
+function fixedDepositSection(opcion, tasasPublicadas) {
+    if (opcion === null) {
         return `<div class="empty-state">Este banco no tiene una tasa disponible en la fuente consultada.</div>`;
     }
 
-    let tarjetas = "";
-    plazos.forEach((plazo, posicion) => {
-        const destacado = posicion === 0; // el primero se resalta con borde
-        tarjetas += fixedTermCard(plazo, banco, state.capital, destacado);
-    });
-
-    return `
-        <h5 class="bank-panel-title">Plazos fijos disponibles</h5>
-        <div class="option-grid">${tarjetas}</div>
+    let html = `
+        <h5 class="bank-panel-title">Plazo fijo para tus ${state.plazo} días</h5>
+        <div class="option-grid">${fixedDepositCard(opcion, state.plazo, state.capital)}</div>
     `;
+    if (tasasPublicadas.length > 0) {
+        html += publishedRatesList(tasasPublicadas);
+    }
+    return html;
 }
 
 function fundsList(fondos) {
     if (fondos.length === 0) {
-        return `<div class="empty-state">No encontramos fondos asociados a este banco en la fuente consultada.</div>`;
+        return `<div class="empty-state">No encontramos fondos de esta entidad para el riesgo elegido.</div>`;
     }
 
     let tarjetas = "";
@@ -127,7 +158,7 @@ function fundsList(fondos) {
     });
 
     return `
-        <h5 class="bank-panel-title">Fondos relacionados con este banco</h5>
+        <h5 class="bank-panel-title">Fondos administrados por esta entidad</h5>
         <div class="option-grid">${tarjetas}</div>
     `;
 }

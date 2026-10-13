@@ -1,28 +1,22 @@
 // ============================================================================
-// PESTAÑAS DE BANCOS
-// Se crean a partir de la lista BANKS de config.js.
+// PESTAÑAS DE BANCOS Y BILLETERAS
+// Se crean a partir de las listas BANKS y WALLETS de config.js.
 // ============================================================================
 
-import { BANKS } from "../config.js";
+import { BANKS, WALLETS } from "../config.js";
 import { escapeHtml } from "../utils/html.js";
 
 const tabList = document.getElementById("bank-tabs");
 
-// Crea un botón por banco. alElegir recibe el nombre del banco tocado.
+// Crea un botón por banco y por billetera. alElegir recibe el nombre tocado.
 export function initBankTabs(alElegir) {
     let html = "";
     BANKS.forEach((banco) => {
-        html += `
-            <button
-                type="button"
-                class="bank-tab"
-                role="tab"
-                aria-selected="false"
-                aria-controls="bank-panel"
-                tabindex="-1"
-                data-bank="${escapeHtml(banco.name)}"
-            >${escapeHtml(banco.label)}</button>
-        `;
+        html += tabButton(banco);
+    });
+    html += `<span class="tab-group-label">Billeteras</span>`;
+    WALLETS.forEach((billetera) => {
+        html += tabButton(billetera);
     });
     tabList.innerHTML = html;
 
@@ -54,6 +48,20 @@ export function initBankTabs(alElegir) {
             tabs[siguiente].click();
         });
     });
+}
+
+function tabButton(entidad) {
+    return `
+        <button
+            type="button"
+            class="bank-tab"
+            role="tab"
+            aria-selected="false"
+            aria-controls="bank-panel"
+            tabindex="-1"
+            data-bank="${escapeHtml(entidad.name)}"
+        >${escapeHtml(entidad.label)}</button>
+    `;
 }
 
 // Marca como activa la pestaña del banco elegido.

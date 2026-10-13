@@ -117,3 +117,21 @@
         font-size: 13.5px;
     }
 }
+
+
+/* ----------------------------------------------------------------------------
+    Separador entre bancos y billeteras
+---------------------------------------------------------------------------- */
+
+.tab-group-label {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    padding: 0 4px 0 12px;
+    border-left: 1px solid var(--border);
+    color: var(--text-3);
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}

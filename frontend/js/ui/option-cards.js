@@ -7,39 +7,47 @@ import { RISK_LEVELS } from "../config.js";
 import { capitalize, formatNumber } from "../utils/format.js";
 import { escapeHtml } from "../utils/html.js";
 
-// Tarjeta de un plazo fijo. Calcula la ganancia para el capital ingresado.
-export function fixedTermCard(plazo, banco, capital, destacado) {
-    let dias;
-    if (plazo.plazo_min === plazo.plazo_max) {
-        dias = `${plazo.plazo_min} días`;
-    } else {
-        dias = `${plazo.plazo_min} a ${plazo.plazo_max} días`;
-    }
-
-    // Interés simple: capital x tasa anual x días / 365
-    const diasDelPlazo = plazo.plazo_min;
-    const ganancia = capital * (plazo.tna / 100) * (diasDelPlazo / 365);
-    const total = capital + ganancia;
-
+// Tarjeta del plazo fijo de un banco para el plazo que eligió el usuario.
+// La tasa, la ganancia y el monto final ya vienen calculados por el backend.
+export function fixedDepositCard(opcion, plazo, capital) {
     return `
-        <article class="option-card ${destacado ? "featured" : ""}">
+        <article class="option-card featured">
             <div class="tags">
                 <span class="tag tag-safe">Tasa fija</span>
             </div>
-            <h4>Plazo fijo de ${dias}</h4>
-            <p class="option-type">Tasa informada por ${escapeHtml(banco)}</p>
+            <h4>Plazo fijo a ${plazo} días</h4>
+            <p class="option-type">${escapeHtml(opcion.horizonte)}</p>
             <div class="option-highlight">
                 <span>Ganancia para $${formatNumber(capital)}</span>
-                <strong>+$${formatNumber(ganancia)}</strong>
+                <strong>+$${formatNumber(opcion.rendimiento)}</strong>
             </div>
             <p class="option-total">
-                Recibirías aproximadamente <strong>$${formatNumber(total)}</strong>
+                Recibirías aproximadamente <strong>$${formatNumber(opcion.monto_final)}</strong>
             </p>
             <ul class="option-details">
-                ${detailRow("Rendimiento anual informado", `${formatNumber(plazo.tna)}%`)}
-                ${detailRow("Disponibilidad", `Al finalizar ${diasDelPlazo} días`)}
+                ${detailRow("Tasa nominal anual (TNA)", `${formatNumber(opcion.tna)}%`)}
+                ${detailRow("Disponibilidad", escapeHtml(opcion.liquidez))}
             </ul>
         </article>
+    `;
+}
+
+// Tabla chica con las tasas que publica el banco para cada plazo.
+export function publishedRatesList(rangos) {
+    let filas = "";
+    rangos.forEach((rango) => {
+        let dias;
+        if (rango.plazo_min === rango.plazo_max) {
+            dias = `${rango.plazo_min} días`;
+        } else {
+            dias = `${rango.plazo_min} a ${rango.plazo_max} días`;
+        }
+        filas += detailRow(dias, `${formatNumber(rango.tna)}%`);
+    });
+
+    return `
+        <h5 class="bank-panel-title rates-title">Otras tasas que publica el banco</h5>
+        <ul class="option-details rates-list">${filas}</ul>
     `;
 }
 

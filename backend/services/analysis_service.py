@@ -9,6 +9,7 @@ Pasos:
 
 from backend.core.config import FIXED_DEPOSIT_TYPE
 from backend.db.repositories import fixed_deposit_repository, fund_repository
+from backend.domain.fixed_deposit_rates import choose_rate_for_term
 from backend.domain.returns import (
     fixed_deposit_gain,
     fund_period_return_pct,
@@ -20,7 +21,7 @@ from backend.services.exceptions import DataNotReadyError, InvalidRiskError, NoO
 from backend.services.recommendation_service import get_recommendation
 
 TEXTO_ACCESO_APP = (
-    "Asociado al banco; confirmá en la app si está habilitado "
+    "Fondo de esta entidad; confirmá en su app si está habilitado "
     "para tu cuenta."
 )
 
@@ -44,6 +45,9 @@ async def analyze_investment(pedido: InvestmentRequest) -> InvestmentResponse:
     if not is_valid_risk(riesgo):
         raise InvalidRiskError("Nivel de riesgo inválido.")
 
+    # Cada banco usa la tasa que corresponde al plazo pedido (30, 90, 365 días...).
+    tasas = apply_rate_for_term(tasas, plazos_fijos, pedido.plazo)
+
     # 2 y 3. Filtrar por riesgo y calcular la ganancia de cada producto.
     opciones = []
     for producto in tasas + fondos:
@@ -66,6 +70,24 @@ async def analyze_investment(pedido: InvestmentRequest) -> InvestmentResponse:
         recomendacion=recomendacion,
         plazos_fijos=plazos_fijos,
     )
+
+
+def apply_rate_for_term(tasas: list[dict], plazos_fijos: list[dict], plazo: int) -> list[dict]:
+    """Reemplaza la tasa general de cada banco por la que corresponde al plazo."""
+    tasas_del_plazo = []
+    for tasa in tasas:
+        rangos_del_banco = []
+        for rango in plazos_fijos:
+            if rango["banco"] == tasa["banco"]:
+                rangos_del_banco.append(rango)
+
+        tna, detalle = choose_rate_for_term(tasa["tna"], rangos_del_banco, plazo)
+
+        tasa_del_plazo = dict(tasa)  # copia, para no modificar la original
+        tasa_del_plazo["tna"] = tna
+        tasa_del_plazo["detalle_tasa"] = detalle
+        tasas_del_plazo.append(tasa_del_plazo)
+    return tasas_del_plazo
 
 
 def obtener_ganancia(opcion: EntityResult) -> float:
@@ -156,6 +178,6 @@ def calculate_fixed_deposit(tasa: dict, capital: float, plazo: int) -> dict:
         "ganancia": fixed_deposit_gain(capital, tasa["tna"], plazo),
         "liquidez": f"Al vencimiento ({plazo} días)",
         "instrumento": "Renta Fija Tradicional",
-        "horizonte": f"Referencia para {plazo} días",
+        "horizonte": tasa["detalle_tasa"],  # explica qué tasa del banco se usó
         "categoria": "plazo_fijo",
     }

@@ -6,14 +6,23 @@ no tener que buscarlo dentro de la lógica.
 
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # ============================================================================
 # RUTAS
 # ============================================================================
 
+CARPETA_PROYECTO = Path(__file__).resolve().parents[2]
+
+# Lee el archivo .env de la carpeta del proyecto (si existe) y carga sus
+# valores como variables de entorno. Así alcanza con poner la clave de Gemini
+# en .env, tanto al ejecutar con Docker como con uvicorn.
+load_dotenv(CARPETA_PROYECTO / ".env")
+
 # Se resuelve desde el directorio de trabajo, igual que antes de separar capas.
 DB_PATH = "investments.db"
 
-FRONTEND_PATH = Path(__file__).resolve().parents[2] / "frontend"
+FRONTEND_PATH = CARPETA_PROYECTO / "frontend"
 
 
 # ============================================================================
@@ -80,11 +89,23 @@ BANCOS_SELECCIONADOS = {
     "CMF": "Banco CMF",
 }
 
-# Nombres alternativos con los que los fondos mencionan a algunos bancos.
-FUND_BANK_ALIASES = {
-    "ICBC": "ICBC",
-    "BANCO NACION": "Banco Nación",
-    "BANCO GALICIA": "Banco Galicia",
-    "BANCO SANTANDER": "Banco Santander",
-    "BBVA": "BBVA",
+# Cada fondo común de inversión lo administra una "sociedad gerente". Muchos
+# bancos y billeteras tienen la suya: con esta lista sabemos a quién pertenece
+# cada fondo. Clave: texto que aparece en el nombre de la sociedad gerente.
+SOCIEDADES_GERENTES = {
+    "PELLEGRINI": "Banco Nación",
+    "GALICIA ASSET": "Banco Galicia",
+    "SANTANDER ASSET": "Banco Santander",
+    "BBVA ASSET": "BBVA",
+    "ICBC INVESTMENTS": "ICBC",
+    "PROVINFONDOS": "Banco Provincia",
+    "MACRO FONDOS": "Banco Macro",
+    "CIUDAD ADMINISTRADORA": "Banco Ciudad",
+    "PATAGONIA INVERSORA": "Banco Patagonia",
+    "SUPERVIELLE ASSET": "Banco Supervielle",
+    "COMAFI ADMINISTRADORA": "Banco Comafi",
+    "CMF ASSET": "Banco CMF",
+    # Billeteras virtuales: el dinero de la cuenta rinde a través de estos fondos.
+    "MERCADO PAGO": "Mercado Pago",
+    "UALA FONDOS": "Ualá",
 }

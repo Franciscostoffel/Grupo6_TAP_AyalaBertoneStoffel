@@ -28,9 +28,19 @@ export const BANKS = [
     { name: "Banco CMF", label: "CMF" }
 ];
 
+// Billeteras virtuales. No tienen plazo fijo: el dinero de la cuenta rinde a
+// través de fondos comunes de inversión administrados por la propia billetera.
+export const WALLETS = [
+    { name: "Mercado Pago", label: "Mercado Pago", url: "https://www.mercadopago.com.ar" },
+    { name: "Ualá", label: "Ualá", url: "https://www.uala.com.ar" }
+];
+
+// Así llama el backend a las opciones de plazo fijo (campo "tipo").
+export const FIXED_DEPOSIT_TYPE = "Plazo Fijo";
+
 export const RISK_LEVELS = ["bajo", "moderado", "alto"];
 
-// Secciones disponibles dentro de cada banco.
+// Secciones disponibles dentro de cada banco o billetera.
 export const SECTIONS = {
     FIXED_TERM: "plazo_fijo",
     FUNDS: "fondos"

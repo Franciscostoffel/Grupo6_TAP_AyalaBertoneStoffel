@@ -77,16 +77,27 @@ def generar_recomendacion_local(opciones: list[EntityResult], plazo: int) -> str
     banco = mejor.banco or "no informado por la fuente"
 
     if mejor.tna is not None:
-        tna = f", con una TNA de referencia del {mejor.tna:.2f}%"
+        tna = f", con una TNA de referencia del {formato_argentino(mejor.tna)}%"
     else:
         tna = ""
 
     return (
         f"La opción destacada es {mejor.nombre}, banco asociado: {banco}{tna}. "
-        f"Ganancia estimada: ${mejor.rendimiento:,.2f}; "
-        f"monto final: ${mejor.monto_final:,.2f}; {mejor.liquidez}. "
+        f"Ganancia estimada: ${formato_argentino(mejor.rendimiento)}; "
+        f"monto final: ${formato_argentino(mejor.monto_final)}; {mejor.liquidez}. "
         "Es una simulación orientativa y el rendimiento no está garantizado."
     )
+
+
+def formato_argentino(numero: float) -> str:
+    """Escribe el número como en Argentina: 212492.84 -> "212.492,84".
+
+    Python usa el formato inglés (212,492.84), así que intercambiamos los
+    separadores: primero la coma pasa a "X", después el punto a coma y al
+    final la "X" a punto.
+    """
+    texto = f"{numero:,.2f}"
+    return texto.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def tiene_numeros(texto: str) -> bool:
