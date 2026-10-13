@@ -1,0 +1,28 @@
+/* ============================================================================
+    TARJETA BASE
+============================================================================ */
+
+.card {
+    padding: 32px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.card h2 {
+    margin-bottom: 24px;
+    font-size: 22px;
+}
+
+@media (max-width: 680px) {
+    .card {
+        padding: 22px 18px;
+        border-radius: var(--radius);
+    }
+
+    .card h2 {
+        margin-bottom: 18px;
+        font-size: 20px;
+    }
+}

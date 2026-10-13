@@ -30,13 +30,34 @@ La aplicación está separada en dos capas simples:
 	bloques siguen este orden: configuración y catálogos, persistencia SQLite,
 	sincronización con APIs externas, normalización y reglas de riesgo, tareas
 	programadas, ciclo de vida, modelos/endpoints y archivos estáticos.
-- `frontend/index.html`: estructura semántica de la pantalla, agrupada en
-	formulario, estados de carga, resultados y errores.
-- `frontend/js/app.js`: comportamiento de la interfaz. El estado se declara al
-	principio; luego aparecen navegación, consulta al backend, renderizado,
-	formateo y manejo de errores.
-- `frontend/css/styles.css`: estilos agrupados por base, formulario, controles,
-	resultados, tarjetas, estados y responsive.
+- `frontend/`: interfaz web sin frameworks ni paso de compilación.
+
+```text
+frontend/
+├── index.html              Estructura de la página (encabezado, simulador, resultados, pie)
+├── assets/icons/           Ícono de la pestaña del navegador
+├── css/
+│   ├── main.css            Punto de entrada: importa el resto en orden
+│   ├── base/               Variables de diseño (tema claro/oscuro), reset y animaciones
+│   ├── layout/             Contenedor, barra de navegación y pie de página
+│   ├── components/         Piezas reutilizables: botones, tarjetas, formularios,
+│   │                       pestañas, tooltip, mensajes y tarjetas de opciones
+│   └── sections/           Estilos propios de cada sección de la página
+└── js/
+    ├── main.js             Punto de entrada: conecta los módulos
+    ├── config.js           Bancos, enlaces oficiales y constantes
+    ├── state.js            Último análisis recibido y banco/sección elegidos
+    ├── services/api.js     Consulta a `/api/analyze`
+    ├── ui/                 Vistas: formulario, resultados, pestañas, panel del
+    │                       banco, plantillas de tarjetas, tema y tooltip
+    └── utils/              Formateo de números y escape de HTML
+```
+
+Cada archivo CSS incluye sus propias reglas para celulares, así los ajustes de
+un componente quedan juntos. El JavaScript usa módulos nativos
+(`<script type="module">`), por lo que la página debe abrirse desde el
+servidor y no con doble clic sobre `index.html`. Para agregar un banco basta
+con sumarlo a `BANKS` en `js/config.js`.
 
 Los comentarios marcan límites entre responsabilidades. Cuando se agregue una
 funcionalidad nueva, conviene colocarla en su bloque correspondiente y evitar

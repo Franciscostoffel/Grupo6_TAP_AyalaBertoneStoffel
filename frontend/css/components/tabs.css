@@ -1,0 +1,119 @@
+/* ============================================================================
+    PESTAÑAS
+    - Bancos: pildoras que se acomodan en filas (en celulares se deslizan).
+    - Secciones dentro de un banco: control segmentado Plazo fijo / Fondos.
+============================================================================ */
+
+.bank-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+    scrollbar-width: none;
+}
+
+.bank-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.bank-tab {
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--text-2);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    scroll-snap-align: start;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.bank-tab:hover {
+    border-color: var(--border-strong);
+    color: var(--text);
+}
+
+.bank-tab.active {
+    border-color: var(--text);
+    background: var(--text);
+    color: var(--bg);
+}
+
+
+/* ----------------------------------------------------------------------------
+    Secciones dentro del banco
+---------------------------------------------------------------------------- */
+
+.subtabs {
+    display: inline-flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    padding: 4px;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+}
+
+.subtab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-2);
+    font: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.subtab:hover {
+    color: var(--text);
+}
+
+.subtab.active {
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    box-shadow: var(--shadow-raised);
+}
+
+.subtab-count {
+    min-width: 20px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--border);
+    color: var(--text-2);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+
+@media (max-width: 680px) {
+    /* Fila deslizable que llega hasta los bordes de la pantalla. */
+    .bank-tabs {
+        flex-wrap: nowrap;
+        margin: 0 calc(var(--page-gutter) * -1) 14px;
+        padding: 2px var(--page-gutter) 6px;
+        overflow-x: auto;
+        scroll-snap-type: x proximity;
+    }
+
+    .subtabs {
+        display: flex;
+    }
+
+    .subtab {
+        flex: 1 1 auto;
+        justify-content: center;
+        padding: 9px 8px;
+        font-size: 13.5px;
+    }
+}

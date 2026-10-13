@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import mimetypes
 import os
 import re
 import sqlite3
@@ -817,6 +818,11 @@ async def analyze_investment(data: InvestmentRequest):
 # ============================================================================
 # ARCHIVOS ESTATICOS DEL FRONTEND
 # ============================================================================
+
+# En Windows el registro puede asociar .js a text/plain, y el navegador
+# rechaza los modulos de JavaScript servidos con ese tipo.
+mimetypes.add_type("text/javascript", ".js")
+mimetypes.add_type("text/css", ".css")
 
 frontend_path = Path(__file__).resolve().parent.parent / "frontend"
 app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")

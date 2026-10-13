@@ -1,0 +1,51 @@
+/* ============================================================================
+    BOTON DE INFORMACION Y TOOLTIP
+    Se abre con hover o foco; en pantallas tactiles, con la clase "open".
+============================================================================ */
+
+.info-button {
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--ai);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--ai);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: help;
+}
+
+.info-button:hover {
+    background: var(--surface);
+}
+
+.info-tooltip {
+    position: absolute;
+    z-index: 5;
+    top: calc(100% + 8px);
+    left: 0;
+    width: min(320px, calc(100vw - 64px));
+    padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text-2);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+    font-size: 13px;
+    line-height: 1.5;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-4px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.info-button:hover + .info-tooltip,
+.info-button:focus-visible + .info-tooltip,
+.info-tooltip.open {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+}
