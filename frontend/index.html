@@ -20,7 +20,7 @@
 
     <main class="container">
 
-        <!-- HEADER -->
+        <!-- Encabezado y explicacion breve del objetivo de la aplicacion. -->
 
         <header class="header">
 
@@ -35,7 +35,7 @@
         </header>
 
 
-        <!-- FORMULARIO -->
+        <!-- Entrada de datos para generar el analisis. -->
 
         <section class="card">
 
@@ -43,7 +43,7 @@
 
             <form id="investment-form">
 
-                <!-- CAPITAL -->
+                <!-- Capital disponible. -->
 
                 <div class="form-group">
 
@@ -68,7 +68,7 @@
                 </div>
 
 
-                <!-- PLAZO -->
+                <!-- Plazo durante el que se mantendra la inversion. -->
 
                 <div class="form-group">
 
@@ -111,7 +111,7 @@
                 </div>
 
 
-                <!-- RIESGO -->
+                <!-- Perfil de riesgo que se usara para filtrar opciones. -->
 
                 <div class="form-group">
 
@@ -146,7 +146,7 @@
                 </div>
 
 
-                <!-- BOTÓN -->
+                <!-- Inicia la consulta al backend. -->
 
                 <button
                     type="submit"
@@ -160,7 +160,7 @@
         </section>
 
 
-        <!-- LOADING -->
+        <!-- Estado visible mientras el backend prepara la recomendacion. -->
 
         <section
             id="loading"
@@ -176,7 +176,7 @@
         </section>
 
 
-        <!-- RESULTADOS -->
+        <!-- Resultados: resumen, opciones por banco y recomendacion. -->
 
         <section
             id="results"
@@ -204,7 +204,7 @@
 
             </div>
 
-            <!-- INVERSIONES -->
+            <!-- Catalogo de inversiones agrupado por banco. -->
 
             <h3>Opciones de inversión</h3>
 
@@ -275,9 +275,28 @@
             </p>
 
 
-            <!-- LLM -->
+            <!-- Recomendacion textual generada por el backend. -->
 
-            <h3>Recomendación de IA</h3>
+            <div class="ai-heading">
+                <h3>Recomendación de IA</h3>
+                <button
+                    type="button"
+                    class="info-button"
+                    aria-label="Cómo se genera la recomendación"
+                    aria-describedby="ai-info-text"
+                >
+                    i
+                </button>
+                <div
+                    id="ai-info-text"
+                    class="info-tooltip"
+                    role="tooltip"
+                >
+                    Compara las opciones según tu riesgo, el rendimiento
+                    estimado y la facilidad para retirar el dinero. Es una
+                    guía orientativa, no una garantía.
+                </div>
+            </div>
 
             <div class="ai-placeholder">
 
@@ -291,7 +310,7 @@
         </section>
 
 
-        <!-- ERROR -->
+        <!-- Mensajes de validacion o errores de comunicacion. -->
 
         <div
             id="error-message"

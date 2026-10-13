@@ -1,3 +1,7 @@
+// ============================================================================
+// REFERENCIAS A LA INTERFAZ Y ESTADO DE LA PANTALLA
+// ============================================================================
+
 const form = document.getElementById("investment-form");
 const button = document.getElementById("analyze-button");
 const loading = document.getElementById("loading");
@@ -17,6 +21,10 @@ let currentCapital = 0;
 let currentFixedTerms = [];
 let currentSection = "plazo_fijo";
 
+// ============================================================================
+// CATALOGOS DE PRESENTACION
+// ============================================================================
+
 // Solo contiene enlaces oficiales. Las tasas y los fondos vienen del backend.
 const bankProducts = {
     "Banco Nación": { url: "https://www.bna.com.ar/Personas/Inversiones" },
@@ -26,6 +34,10 @@ const bankProducts = {
     "ICBC": { url: "https://icbc.com.ar/personas/productos-servicios/inversiones" }
 };
 
+// ============================================================================
+// NAVEGACION ENTRE BANCOS
+// ============================================================================
+
 investmentTabs.forEach((tab) => {
     tab.addEventListener("click", () => {
         investmentTabs.forEach((item) => item.classList.remove("active"));
@@ -33,6 +45,10 @@ investmentTabs.forEach((tab) => {
         renderBankOptions(tab.dataset.bank, currentSection);
     });
 });
+
+// ============================================================================
+// ENVIO DEL FORMULARIO Y CONSULTA DE RECOMENDACIONES
+// ============================================================================
 
 form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -79,16 +95,16 @@ form.addEventListener("submit", async (event) => {
         resultPlazo.textContent = data.plazo;
         resultRisk.textContent = capitalize(data.riesgo);
 
-      currentOptions = data.opciones;
-      currentPlazo = data.plazo;
-      currentCapital = data.capital;
-      currentFixedTerms = data.plazos_fijos;
-      renderBankOptions("Banco Nación", "plazo_fijo");
+                currentOptions = data.opciones;
+                currentPlazo = data.plazo;
+                currentCapital = data.capital;
+                currentFixedTerms = data.plazos_fijos;
+                renderBankOptions("Banco Nación", "plazo_fijo");
 
         // 3. Mostrar la recomendación
         aiPlaceholder.innerHTML = `
             <p style="padding: 12px; background: #f0f4f8; border-left: 4px solid #1a73e8; margin: 0; line-height: 1.5;">
-                ${data.recomendacion}
+                ${escapeHtml(data.recomendacion)}
             </p>
         `;
 
@@ -101,6 +117,10 @@ form.addEventListener("submit", async (event) => {
         button.disabled = false;
     }
 });
+
+// ============================================================================
+// RENDERIZADO DE OPCIONES DE INVERSION
+// ============================================================================
 
 function renderBankOptions(bank, section = "plazo_fijo") {
       const catalog = bankProducts[bank];
@@ -205,6 +225,10 @@ function renderBankOptions(bank, section = "plazo_fijo") {
       });
 }
 
+// ============================================================================
+// FORMATEO Y SEGURIDAD DE DATOS MOSTRADOS
+// ============================================================================
+
 function formatNumber(number) {
     return new Intl.NumberFormat("es-AR", {
         minimumFractionDigits: 2,
@@ -224,6 +248,10 @@ function escapeHtml(text) {
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
 }
+
+// ============================================================================
+// ESTADO DE ERRORES DE LA INTERFAZ
+// ============================================================================
 
 function showError(message) {
     errorMessage.textContent = message;

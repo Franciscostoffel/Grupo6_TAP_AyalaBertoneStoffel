@@ -1,21 +1,39 @@
+"""API principal de Inversion Inteligente.
+
+El archivo esta organizado por responsabilidad: configuracion, persistencia,
+fuentes externas, dominio, ciclo de vida, API y archivos estaticos.
+"""
+
+from __future__ import annotations
+
 import asyncio
+import json
+import os
+import re
+import sqlite3
+import time
+import unicodedata
 from contextlib import asynccontextmanager
 from pathlib import Path
-import sqlite3
-import unicodedata
-import re
+
 import httpx
+from google import genai
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
-# Datos de las fuentes que alimentan la aplicación.
+# ============================================================================
+# CONFIGURACION Y CATALOGOS
+# ============================================================================
+
+# URLs de las fuentes que alimentan la aplicacion.
 FIXED_DEPOSIT_API_URL = (
     "https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo/"
 )
 FUNDS_API_URL = "https://compararfondos.com.ar/api/fondos"
 DB_PATH = "investments.db"
+CACHE_TTL_SECONDS = 60 * 60
 
 BANCOS_SELECCIONADOS = {
     "NACION": "Banco Nación",
@@ -43,6 +61,11 @@ FUND_BANK_ALIASES = {
     "BANCO SANTANDER": "Banco Santander",
     "BBVA": "BBVA",
 }
+
+
+# ============================================================================
+# PERSISTENCIA LOCAL (SQLITE)
+# ============================================================================
 
 def init_db():
     """Create the local cache used by the API and migrate older columns."""
@@ -98,6 +121,12 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS source_cache (
+            fuente TEXT PRIMARY KEY,
+            synced_at TIMESTAMP NOT NULL
+        )
+    """)
     cursor.execute("PRAGMA table_info(fci_funds)")
     fci_columns = {row[1] for row in cursor.fetchall()}
     if "banco" not in fci_columns:
@@ -116,6 +145,35 @@ def init_db():
             cursor.execute(f"ALTER TABLE fci_funds ADD COLUMN {column} {definition}")
     conn.commit()
     conn.close()
+
+def mark_source_synced(source: str):
+    """Record the last successful refresh of one external data source."""
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("""
+        INSERT INTO source_cache (fuente, synced_at)
+        VALUES (?, CURRENT_TIMESTAMP)
+        ON CONFLICT(fuente) DO UPDATE SET synced_at = excluded.synced_at
+    """, (source,))
+    conn.commit()
+    conn.close()
+
+def investment_cache_is_fresh() -> bool:
+    """Return whether both external catalogs are still within the cache TTL."""
+    conn = sqlite3.connect(DB_PATH)
+    rows = conn.execute("""
+        SELECT fuente, synced_at
+        FROM source_cache
+        WHERE fuente IN ('plazos_fijos', 'fci')
+    """).fetchall()
+    conn.close()
+    if len(rows) != 2:
+        return False
+    return all(
+        (time.time() - time.mktime(time.strptime(
+            synced_at, "%Y-%m-%d %H:%M:%S"
+        ))) < CACHE_TTL_SECONDS
+        for _, synced_at in rows
+    )
 
 def save_rate_to_db(
     nombre: str,
@@ -292,9 +350,9 @@ def get_investment_data() -> tuple[list[dict], list[dict], list[dict]]:
     conn.close()
     return rates, fixed_terms, funds
 
-# =========================
-# 3. BACKGROUND JOBS CONCURRENTES
-# =========================
+# ============================================================================
+# SINCRONIZACION CON FUENTES EXTERNAS
+# ============================================================================
 
 async def sync_fixed_deposits(client: httpx.AsyncClient):
     """Sync official bank rates and terms from ArgentinaDatos."""
@@ -335,6 +393,7 @@ async def sync_fixed_deposits(client: httpx.AsyncClient):
                                 nombre, int(plazo_min), int(plazo_max),
                                 round(term_tna, 2)
                             )
+            mark_source_synced("plazos_fijos")
     except Exception as e:
         print(f"[JOB ERROR] Plazos Fijos: {e}")
 
@@ -395,8 +454,14 @@ async def sync_fci(client: httpx.AsyncClient):
                 minimo=item.get("minimo"),
                 plazo_liq=item.get("plazoLiq"),
             )
+        mark_source_synced("fci")
     except Exception as e:
         print(f"[JOB ERROR] FCI: {e}")
+
+
+# ============================================================================
+# REGLAS DE NEGOCIO Y NORMALIZACION
+# ============================================================================
 
 def bank_for_fund(item: dict) -> str | None:
     text = unicodedata.normalize(
@@ -436,8 +501,30 @@ def risk_matches(selected: str, category: str) -> bool:
     levels = {"bajo": 0, "moderado": 1, "alto": 2}
     return levels.get(category, 2) <= levels.get(selected, 0)
 
+def generar_recomendacion_local(
+    opciones: list[EntityResult],
+    plazo: int,
+) -> str:
+    """Provide a deterministic recommendation when Gemini is unavailable."""
+    mejor = opciones[0]
+    banco = mejor.banco or "no informado por la fuente"
+    tna = (
+        f", con una TNA de referencia del {mejor.tna:.2f}%"
+        if mejor.tna is not None
+        else ""
+    )
+    return (
+        f"La opción destacada es {mejor.nombre}, banco asociado: {banco}{tna}. "
+        f"Ganancia estimada: ${mejor.rendimiento:,.2f}; "
+        f"monto final: ${mejor.monto_final:,.2f}; {mejor.liquidez}. "
+        "Es una simulación orientativa y el rendimiento no está garantizado."
+    )
+
 async def background_sync_all():
     """Refresh both data sources concurrently and keep the previous cache on errors."""
+    if investment_cache_is_fresh():
+        print("[CACHE] Datos vigentes; no se consultan las APIs externas.")
+        return
     print("[BACKGROUND JOB] Sincronizando plazos fijos y fondos...")
     async with httpx.AsyncClient(timeout=15.0, verify=False) as client:
         resultados = await asyncio.gather(
@@ -450,9 +537,9 @@ async def background_sync_all():
                 print(f"[JOB ERROR] Sincronización: {resultado}")
     print("[BACKGROUND JOB] Sincronización completada.")
 
-# =========================
-# 4. CICLO DE VIDA (LIFESPAN)
-# =========================
+# ============================================================================
+# TAREAS PROGRAMADAS Y CICLO DE VIDA
+# ============================================================================
 
 scheduler = AsyncIOScheduler()
 
@@ -473,9 +560,9 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# =========================
-# 5. MODELOS Y ENDPOINTS
-# =========================
+# ============================================================================
+# MODELOS DE LA API Y ENDPOINTS
+# ============================================================================
 
 class InvestmentRequest(BaseModel):
     capital: float = Field(gt=0)
@@ -508,6 +595,73 @@ class InvestmentResponse(BaseModel):
     opciones: list[EntityResult]
     recomendacion: str
     plazos_fijos: list[dict]
+
+
+# ============================================================================
+# RECOMENDACION CON GEMINI
+# ============================================================================
+
+def generar_recomendacion_gemini(
+    capital: float,
+    plazo: int,
+    riesgo: str,
+    opciones_filtradas: list[EntityResult],
+) -> str:
+    """Genera una explicación de las opciones usando Gemini."""
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        return (
+            "La recomendación de IA no está configurada. "
+            "La opción principal se calculó con los datos disponibles."
+        )
+
+    # Se limita el contexto para evitar prompts innecesariamente grandes.
+    opciones_para_prompt = [
+        opcion.model_dump() for opcion in opciones_filtradas[:10]
+    ]
+    prompt = f"""
+Actúa como un asesor financiero claro y prudente para una aplicación argentina.
+El usuario quiere invertir ${capital:,.2f} ARS durante {plazo} días y acepta un
+nivel de riesgo '{riesgo}'.
+
+Estas son las opciones ya filtradas y calculadas por el sistema:
+{json.dumps(opciones_para_prompt, ensure_ascii=False, indent=2)}
+
+Redacta una recomendación muy breve, clara y agradable para el usuario.
+Responde únicamente en texto plano, sin Markdown, títulos, viñetas, símbolos
+como # o **, saludos ni explicaciones largas. Usa como máximo 3 oraciones y
+70 palabras. Indica siempre el nombre de la opción elegida y escribe "Banco asociado:
+no informado por la fuente" si el campo banco está vacío. Incluye también el
+banco asociado cuando esté disponible, la ganancia estimada, el monto final y
+su liquidez; menciona la TNA solo como referencia si está disponible. Usa
+exclusivamente los datos recibidos, no inventes información ni asegures
+rendimientos. Termina con una sola frase breve indicando que es una
+simulación orientativa y que los rendimientos no están garantizados.
+"""
+
+    model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+    client = genai.Client(api_key=api_key)
+    for intento in range(1, 2):
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt,
+            )
+            recomendacion = (response.text or "").strip()
+            if recomendacion:
+                usage = getattr(response, "usage_metadata", None)
+                print(
+                    f"[GEMINI OK] modelo={model} intento={intento} "
+                    f"uso={usage or 'no informado'}"
+                )
+                return recomendacion
+            raise ValueError("Gemini devolvió una respuesta vacía.")
+        except Exception as error:
+            print(
+                f"[GEMINI ERROR] modelo={model} intento={intento}: {error}"
+            )
+            return generar_recomendacion_local(opciones_filtradas, plazo)
+
 
 @app.post("/api/analyze", response_model=InvestmentResponse)
 async def analyze_investment(data: InvestmentRequest):
@@ -608,20 +762,23 @@ async def analyze_investment(data: InvestmentRequest):
         )
 
     opciones.sort(key=lambda x: x.rendimiento, reverse=True)
-    mejor = opciones[0]
 
-    tna_referencia = (
-        f"{mejor.tna:.2f}% TNA de referencia"
-        if mejor.tna is not None
-        else "TNA no disponible"
-    )
-    recomendacion = (
-        f"Para un plazo de {data.plazo} días y perfil '{data.riesgo}': "
-        f"La mejor opción estimada es {mejor.nombre} ({mejor.instrumento}) con "
-        f"{tna_referencia} y una ganancia estimada de "
-        f"${mejor.rendimiento:,.2f}. Los FCI no garantizan rendimientos; "
-        f"sus tasas provienen de resultados históricos publicados."
-    )
+    # La llamada síncrona de Gemini se ejecuta en otro hilo para no bloquear
+    # el event loop de FastAPI mientras esperamos la respuesta externa.
+    try:
+        recomendacion = await asyncio.wait_for(
+            asyncio.to_thread(
+                generar_recomendacion_gemini,
+                data.capital,
+                data.plazo,
+                riesgo,
+                opciones,
+            ),
+            timeout=5,
+        )
+    except asyncio.TimeoutError:
+        print("[GEMINI TIMEOUT] Se usa la recomendación local.")
+        recomendacion = generar_recomendacion_local(opciones, data.plazo)
 
     return InvestmentResponse(
         capital=data.capital,
@@ -632,9 +789,9 @@ async def analyze_investment(data: InvestmentRequest):
         plazos_fijos=selected_terms,
     )
 
-# =========================
-# 6. ARCHIVOS ESTÁTICOS FRONTEND
-# =========================
+# ============================================================================
+# ARCHIVOS ESTATICOS DEL FRONTEND
+# ============================================================================
 
 frontend_path = Path(__file__).resolve().parent.parent / "frontend"
 app.mount("/", StaticFiles(directory=frontend_path, html=True), name="frontend")
