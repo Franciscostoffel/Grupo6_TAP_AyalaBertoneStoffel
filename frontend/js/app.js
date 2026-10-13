@@ -104,7 +104,7 @@ form.addEventListener("submit", async (event) => {
         // 3. Mostrar la recomendación
         aiPlaceholder.innerHTML = `
             <p style="padding: 12px; background: #f0f4f8; border-left: 4px solid #1a73e8; margin: 0; line-height: 1.5;">
-                ${data.recomendacion}
+                ${escapeHtml(data.recomendacion)}
             </p>
         `;
 
