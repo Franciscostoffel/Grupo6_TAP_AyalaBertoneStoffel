@@ -17,7 +17,6 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 import httpx
-from google import genai
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -630,32 +629,58 @@ Estas son las opciones ya filtradas y calculadas por el sistema:
 Redacta una recomendación muy breve, clara y agradable para el usuario.
 Responde únicamente en texto plano, sin Markdown, títulos, viñetas, símbolos
 como # o **, saludos ni explicaciones largas. Usa como máximo 3 oraciones y
-70 palabras. Indica siempre el nombre de la opción elegida y escribe "Banco asociado:
-no informado por la fuente" si el campo banco está vacío. Incluye también el
-banco asociado cuando esté disponible, la ganancia estimada, el monto final y
-su liquidez; menciona la TNA solo como referencia si está disponible. Usa
-exclusivamente los datos recibidos, no inventes información ni asegures
-rendimientos. Termina con una sola frase breve indicando que es una
-simulación orientativa y que los rendimientos no están garantizados.
+70 palabras. Escribe todos los números usando dígitos, nunca con palabras:
+por ejemplo, "$100.000", "30 días", "41,81%" y "$102.953,70". Usa siempre
+"$" para importes, "%" para porcentajes y dígitos para los días. Indica
+siempre el nombre de la opción elegida y escribe "Banco asociado: no informado
+por la fuente" si el campo banco está vacío. Incluye también el banco asociado
+cuando esté disponible, la ganancia estimada, el monto final y su liquidez;
+menciona la TNA solo como referencia si está disponible. Usa exclusivamente
+los datos recibidos, no inventes información ni asegures rendimientos.
+Termina con una sola frase breve indicando que es una simulación orientativa
+y que los rendimientos no están garantizados.
 """
 
     model = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
-    client = genai.Client(api_key=api_key)
+    url = (
+        "https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{model}:generateContent"
+    )
     for intento in range(1, 2):
         try:
-            response = client.models.generate_content(
-                model=model,
-                contents=prompt,
+            response = httpx.post(
+                url,
+                headers={"x-goog-api-key": api_key},
+                json={"contents": [{"parts": [{"text": prompt}]}]},
+                timeout=4.5,
             )
-            recomendacion = (response.text or "").strip()
-            if recomendacion:
-                usage = getattr(response, "usage_metadata", None)
+            if response.is_error:
+                print(
+                    f"[GEMINI HTTP ERROR] status={response.status_code} "
+                    f"detalle={response.text[:500]}"
+                )
+                response.raise_for_status()
+            response_data = response.json()
+            parts = (
+                response_data.get("candidates", [{}])[0]
+                .get("content", {})
+                .get("parts", [])
+            )
+            recomendacion = " ".join(
+                part.get("text", "").strip()
+                for part in parts
+                if part.get("text")
+            ).strip()
+            if recomendacion and any(char.isdigit() for char in recomendacion):
+                usage = response_data.get("usageMetadata", "no informado")
                 print(
                     f"[GEMINI OK] modelo={model} intento={intento} "
-                    f"uso={usage or 'no informado'}"
+                    f"uso={usage}"
                 )
                 return recomendacion
-            raise ValueError("Gemini devolvió una respuesta vacía.")
+            raise ValueError(
+                "Gemini devolvió una respuesta vacía o sin números en dígitos."
+            )
         except Exception as error:
             print(
                 f"[GEMINI ERROR] modelo={model} intento={intento}: {error}"
