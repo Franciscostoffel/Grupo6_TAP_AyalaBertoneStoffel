@@ -24,12 +24,44 @@ primer acceso puede demorar mientras el servicio arranca y reconstruye su caché
 
 ## Organización del código
 
-La aplicación está separada en dos capas simples:
+La aplicación tiene un backend en FastAPI y un frontend sin frameworks.
 
-- `backend/main.py`: API FastAPI y reglas de negocio. Dentro del archivo, los
-	bloques siguen este orden: configuración y catálogos, persistencia SQLite,
-	sincronización con APIs externas, normalización y reglas de riesgo, tareas
-	programadas, ciclo de vida, modelos/endpoints y archivos estáticos.
+### Backend en capas
+
+```text
+backend/
+├── main.py                 Punto de entrada: crea la app, registra rutas y estáticos
+├── core/config.py          Configuración: URLs, tiempos, caché y catálogo de bancos
+├── api/routes/             Endpoints HTTP (POST /api/analyze)
+├── schemas/                Modelos Pydantic de entrada y salida de la API
+├── services/               Casos de uso
+│   ├── analysis_service.py       Filtra por riesgo, calcula y ordena opciones
+│   ├── recommendation_service.py Recomendación con Gemini o local
+│   ├── fixed_deposit_sync.py     Sincroniza plazos fijos
+│   ├── fund_sync.py              Sincroniza fondos comunes
+│   └── sync_service.py           Ejecuta ambas sincronizaciones en paralelo
+├── domain/                 Reglas de negocio puras: riesgo, rendimientos, bancos, fondos
+├── clients/                Consultas HTTP a ArgentinaDatos, CompararFondos y Gemini
+├── db/                     Conexión, esquema y repositorios de SQLite
+└── tasks/scheduler.py      Sincronización programada cada hora
+```
+
+Cada capa solo usa las de abajo: `api` llama a `services`; `services` combina
+`domain`, `clients` y `db`. `domain` no conoce la base de datos, HTTP ni
+FastAPI, y solo los repositorios de `db/` escriben SQL. Los errores esperados
+del análisis se lanzan como excepciones en `services/exceptions.py` y la ruta
+los convierte en respuestas 503, 422 o 404.
+
+Para ejecutarlo sin Docker, desde la carpeta raíz:
+
+```powershell
+python -m venv .venv
+.venv/Scripts/python -m pip install -r backend/requirements.txt
+.venv/Scripts/python -m uvicorn backend.main:app --reload
+```
+
+### Frontend
+
 - `frontend/index.html`: estructura semántica de la pantalla, agrupada en
 	formulario, estados de carga, resultados y errores.
 - `frontend/js/app.js`: comportamiento de la interfaz. El estado se declara al
