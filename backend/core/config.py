@@ -22,10 +22,42 @@ load_dotenv(CARPETA_PROYECTO / ".env")
 
 # PostgreSQL es la única fuente de persistencia. En desarrollo puede apuntar a
 # la base local de docker-compose y en producción a la URL del proveedor.
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://inversion:inversion@localhost:5432/investments",
-)
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+
+# Render define RENDER automáticamente. En local se permite HTTP explícitamente.
+APP_ENV = os.getenv("APP_ENV", "production" if os.getenv("RENDER") else "development")
+COOKIE_SECURE = APP_ENV == "production"
+SESSION_COOKIE_NAME = "__Host-session" if COOKIE_SECURE else "session"
+SESSION_TTL_SECONDS = 7 * 24 * 60 * 60
+AUTH_ALLOWED_ORIGINS = {
+    origin.strip().rstrip("/")
+    for origin in os.getenv(
+        "AUTH_ALLOWED_ORIGINS",
+        "" if COOKIE_SECURE else "http://localhost:8000,http://127.0.0.1:8000",
+    ).split(",") if origin.strip()
+}
+
+
+def validate_auth_config():
+    """Falla al iniciar si falta una configuración necesaria para autenticar."""
+    from urllib.parse import urlsplit
+
+    if APP_ENV not in {"development", "production", "test"}:
+        raise RuntimeError("APP_ENV debe ser development, production o test.")
+    if os.getenv("RENDER") and APP_ENV != "production":
+        raise RuntimeError("En Render, APP_ENV debe ser production para usar cookies seguras.")
+    if not DATABASE_URL:
+        raise RuntimeError("Configurá DATABASE_URL en el entorno.")
+    if not AUTH_ALLOWED_ORIGINS:
+        raise RuntimeError("Configurá AUTH_ALLOWED_ORIGINS con la URL pública de la aplicación.")
+    for origin in AUTH_ALLOWED_ORIGINS:
+        parsed = urlsplit(origin)
+        if (parsed.scheme not in {"http", "https"} or not parsed.netloc
+                or parsed.path or parsed.query or parsed.fragment
+                or parsed.username or parsed.password):
+            raise RuntimeError("AUTH_ALLOWED_ORIGINS debe contener orígenes sin rutas.")
+        if COOKIE_SECURE and parsed.scheme != "https":
+            raise RuntimeError("Los orígenes de producción deben usar HTTPS.")
 
 FRONTEND_PATH = CARPETA_PROYECTO / "frontend"
 

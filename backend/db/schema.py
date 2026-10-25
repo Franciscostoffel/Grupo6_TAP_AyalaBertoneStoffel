@@ -24,7 +24,7 @@ COLUMNAS_NUEVAS_FONDOS = [
 
 
 def init_db():
-    """Crea las cuatro tablas de la aplicación.
+    """Crea las tablas de inversiones, usuarios y sesiones.
 
     - rates: tasa general de plazo fijo de cada banco.
     - fixed_deposit_terms: tasa de cada rango de días de cada banco.
@@ -85,8 +85,49 @@ def init_db():
     """)
     agregar_columnas_faltantes(cursor, "fci_funds", COLUMNAS_NUEVAS_FONDOS)
 
+    create_auth_tables(cursor)
+
     conn.commit()
     conn.close()
+
+
+def create_auth_tables(cursor):
+    """Tablas propias de autenticación, también compatibles con PostgreSQL local."""
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id UUID PRIMARY KEY,
+            email TEXT NOT NULL CONSTRAINT users_email_key UNIQUE,
+            password_hash TEXT NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT users_email_normalized CHECK (email = lower(btrim(email)))
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_sessions (
+            token_hash TEXT PRIMARY KEY,
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            expires_at TIMESTAMPTZ NOT NULL,
+            CHECK (expires_at > created_at)
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS user_sessions_user_id_idx ON user_sessions (user_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS user_sessions_expires_at_idx ON user_sessions (expires_at)")
+    # El dueño de las tablas (conexión del backend) conserva acceso. Sin políticas
+    # públicas, la Data API de Supabase no puede leer usuarios ni sesiones.
+    cursor.execute("ALTER TABLE users ENABLE ROW LEVEL SECURITY")
+    cursor.execute("ALTER TABLE user_sessions ENABLE ROW LEVEL SECURITY")
+    cursor.execute("REVOKE ALL ON users, user_sessions FROM PUBLIC")
+    cursor.execute("""
+        DO $$ BEGIN
+            IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
+                REVOKE ALL ON users, user_sessions FROM anon;
+            END IF;
+            IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'authenticated') THEN
+                REVOKE ALL ON users, user_sessions FROM authenticated;
+            END IF;
+        END $$
+    """)
 
 
 def agregar_columnas_faltantes(cursor, tabla, columnas):

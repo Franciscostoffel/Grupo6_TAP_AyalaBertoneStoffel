@@ -15,3 +15,11 @@ class InvalidRiskError(Exception):
 
 class NoOptionsError(Exception):
     """Ningún producto es compatible con el riesgo elegido. -> HTTP 404"""
+
+
+class EmailAlreadyRegisteredError(Exception):
+    """El email ya tiene una cuenta. -> HTTP 409"""
+
+
+class InvalidCredentialsError(Exception):
+    """El email o la contraseña no son correctos. -> HTTP 401"""

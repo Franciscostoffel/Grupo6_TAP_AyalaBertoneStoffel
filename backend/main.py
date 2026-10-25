@@ -21,8 +21,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from backend.api.routes import analysis
-from backend.core.config import FRONTEND_PATH
+from backend.api.routes import analysis, auth
+from backend.core.config import FRONTEND_PATH, validate_auth_config
 from backend.db.schema import init_db
 from backend.services.sync_service import sync_all_sources
 from backend.tasks.scheduler import start_scheduler, stop_scheduler
@@ -33,6 +33,7 @@ from backend.tasks.scheduler import start_scheduler, stop_scheduler
 # está después, al cerrar.
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    validate_auth_config()
     init_db()                                  # crea las tablas si no existen
     asyncio.create_task(sync_all_sources())    # descarga los datos sin frenar el arranque
     start_scheduler()                          # programa la descarga cada una hora
@@ -47,7 +48,8 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Rutas de la API (por ahora solo POST /api/analyze).
+# Las rutas de la API se registran antes que los archivos estáticos.
+app.include_router(auth.router)
 app.include_router(analysis.router)
 
 

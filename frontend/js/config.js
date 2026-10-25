@@ -3,6 +3,7 @@
 // ============================================================================
 
 export const ANALYZE_ENDPOINT = "/api/analyze";
+export const AUTH_ENDPOINT = "/api/auth";
 
 // Debe coincidir con la clave que lee el script en linea de index.html.
 export const THEME_STORAGE_KEY = "theme";

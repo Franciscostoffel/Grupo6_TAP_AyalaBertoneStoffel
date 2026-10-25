@@ -12,7 +12,8 @@ export async function analyzeInvestment(datos) {
     try {
         respuesta = await fetch(ANALYZE_ENDPOINT, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            credentials: "same-origin",
+            headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
             body: JSON.stringify(datos)
         });
     } catch (error) {
@@ -31,7 +32,9 @@ export async function analyzeInvestment(datos) {
         } catch (error) {
             // La respuesta no era JSON: dejamos el mensaje genérico.
         }
-        throw new Error(mensaje);
+        const error = new Error(mensaje);
+        error.status = respuesta.status;
+        throw error;
     }
 
     return respuesta.json();

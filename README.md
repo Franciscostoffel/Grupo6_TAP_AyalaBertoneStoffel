@@ -149,6 +149,7 @@ GEMINI_API_KEY=tu_clave_de_google_ai_studio
 
 Con eso alcanza: la clave se toma del `.env` tanto con Docker
 (`docker compose up --build`) como sin Docker (`uvicorn backend.main:app`).
+Para ejecutar sin Docker también es obligatorio configurar `DATABASE_URL`.
 El archivo `.env` está en `.gitignore`, así que cada integrante usa su propia
 clave y nunca se sube a GitHub. En Render, la clave se carga en el panel del
 servicio, en **Environment**, con el nombre `GEMINI_API_KEY`.
@@ -207,7 +208,9 @@ Render construye el Dockerfile; no ejecuta docker-compose.yml.
 Render proporciona la variable `PORT`, que utiliza el comando del Dockerfile.
 En Docker local, si no se define esa variable, se utiliza el puerto 8000.
 `PYTHONUNBUFFERED=1` está definido en la imagen para mostrar los logs de Python
-inmediatamente. La aplicación actual no requiere API keys ni otras variables.
+inmediatamente. Configurar `DATABASE_URL`, `APP_ENV=production` y
+`AUTH_ALLOWED_ORIGINS` con el origen HTTPS público, sin rutas ni barra final.
+`GEMINI_API_KEY` es opcional para las recomendaciones.
 Mantener un único worker y una instancia para evitar duplicar el scheduler.
 
 El health check en `/` comprueba que la web responde, pero no verifica la
@@ -215,8 +218,8 @@ disponibilidad de datos en PostgreSQL ni el éxito de las consultas externas.
 
 ### Caché y ejecución del job en el plan gratuito
 
-PostgreSQL contiene catálogos de tasas y fondos; no almacena los inputs del
-usuario. En Docker local, el servicio `db` conserva la información en el volumen
+PostgreSQL contiene catálogos de tasas y fondos, usuarios y sesiones; no almacena
+los inputs del simulador. En Docker local, el servicio `db` conserva la información en el volumen
 `postgres_data`. La aplicación reconstruye la caché consultando las fuentes si
 la base todavía no tiene datos.
 
@@ -230,8 +233,10 @@ PostgreSQL; el servicio debe tener definida la variable `DATABASE_URL`.
 
 ### Verificar el deploy
 
-- Abrir `/` y comprobar que se muestran el formulario, estilos y resultados.
-- Abrir `/docs` y ejecutar `POST /api/analyze` con este cuerpo:
+- Abrir `/`, registrar una cuenta o iniciar sesión y comprobar el simulador.
+- Desde el frontend autenticado ejecutar un análisis. Las llamadas POST manuales
+  necesitan la cookie de sesión, `Origin` con el origen configurado y
+  `X-Requested-With: fetch`, además del cuerpo JSON:
 
   ```json
   {"capital": 500000, "plazo": 30, "riesgo": "bajo"}
@@ -260,3 +265,89 @@ Documentación oficial: [Web Services](https://render.com/docs/web-services),
 [Health Checks](https://render.com/docs/health-checks),
 [Deploys](https://render.com/docs/deploys) y
 [Free instances](https://render.com/docs/free).
+
+## Registro y autenticación
+
+La autenticación sigue `api/routes/auth.py → services/auth_service.py →
+db/repositories/`. `core/security.py` usa Argon2id para contraseñas. El usuario
+tiene un UUID estable para futuras relaciones; esta feature no guarda favoritos
+ni cambia los cálculos de inversiones.
+
+`schema.py` crea `users` y `user_sessions` al iniciar. Usuario y sesión se crean
+en una transacción. La cookie HttpOnly contiene un token aleatorio; PostgreSQL
+guarda solamente su SHA-256. Las sesiones duran siete días sin renovación
+automática y se conservan ante reinicios. Cada solicitud verifica el vencimiento;
+el scheduler elimina filas vencidas cada 24 horas. Logout invalida la sesión
+actual; otros dispositivos mantienen sus propias sesiones.
+
+| Método | Endpoint | Resultado |
+| --- | --- | --- |
+| POST | `/api/auth/register` | Email y contraseña; crea cuenta y sesión, devuelve 201. |
+| POST | `/api/auth/login` | Email y contraseña; inicia sesión. |
+| GET | `/api/auth/me` | UUID, email y fecha de creación; 401 sin sesión vigente. |
+| POST | `/api/auth/logout` | Invalida sesión y borra cookie; 204 incluso sin sesión. |
+| POST | `/api/analyze` | Requiere una sesión vigente. |
+
+La contraseña de registro debe tener entre 15 y 128 caracteres; los espacios
+se conservan. El email se normaliza a minúsculas y es único. Un registro
+duplicado devuelve 409, lo que permite saber que ese email ya está registrado.
+El login devuelve el mismo error para email inexistente y contraseña incorrecta.
+No se verifica propiedad del email y no hay recuperación de contraseña.
+
+### Configuración local
+
+Copiar `.env.example` a `.env`. Con Docker Compose, dejar `DATABASE_URL` vacío
+para usar `db`, y ejecutar `docker compose up --build`. Para Uvicorn sin Docker,
+configurar una URL PostgreSQL accesible, por ejemplo
+`postgresql://inversion:inversion@localhost:5432/investments` si se dispone de esa
+base local. Las credenciales de Compose son solo para desarrollo.
+
+`APP_ENV=development` usa una cookie `session` sin Secure para HTTP local.
+`AUTH_ALLOWED_ORIGINS` contiene orígenes completos separados por comas, por
+defecto `http://localhost:8000,http://127.0.0.1:8000`. Ajustarlo si se cambia el
+puerto. El frontend debe abrirse desde FastAPI, sin Live Server ni otro origen.
+
+### Render y Supabase
+
+Configurar en Environment, sin subir secretos al repositorio:
+
+- `DATABASE_URL`: conexión PostgreSQL de Supabase con TLS, usando los parámetros
+  y certificados indicados por el proveedor; no desactivar la validación TLS.
+- `APP_ENV=production`: obligatorio en Render; no copiar el valor de desarrollo.
+- `AUTH_ALLOWED_ORIGINS`: el origen HTTPS real, por ejemplo
+  `https://inversion-inteligente-u4se.onrender.com`. Agregar el dominio propio
+  separado por coma si se utiliza.
+
+En producción la cookie es `__Host-session`, HttpOnly, Secure, SameSite=Lax,
+Path=/ y sin Domain. No se requiere un secreto de JWT. El frontend nunca recibe
+hashes de contraseñas ni tokens en JSON y no guarda credenciales en localStorage.
+Los POST requieren Origin permitido y `X-Requested-With: fetch`; no habilitar
+CORS entre orígenes sin revisar este mecanismo de protección CSRF.
+
+La conexión del backend debe ser dueña de las tablas o tener permisos y acceso
+RLS adecuados. El esquema activa RLS sin políticas públicas y revoca acceso a
+PUBLIC y a los roles `anon` y `authenticated` cuando existen. Verificar en
+Supabase que sus APIs públicas no puedan leer ni escribir estas tablas. No se
+utiliza Supabase Auth. Mantener respaldos: los usuarios no son caché reconstruible.
+
+El límite de intentos es por IP: 20 logins cada 15 minutos y 10 registros por
+hora, incluyendo intentos exitosos. Es local a un proceso, acotado a 10.000
+entradas y se reinicia con el servicio. Antes de escalar a varias instancias,
+usar un límite compartido. Verificar que Uvicorn reciba la IP correcta detrás
+del proxy de Render; configurar `FORWARDED_ALLOW_IPS` solo para proxies
+confiables de la infraestructura. El código no confía manualmente en
+`X-Forwarded-For`. Un proxy sin configurar puede hacer que varias personas
+compartan el mismo límite.
+
+### Pruebas
+
+```powershell
+.venv/Scripts/python -m unittest discover -s backend/tests -v
+```
+
+Las pruebas unitarias no conectan a la base del `.env`. Las pruebas PostgreSQL
+solo corren si se define `TEST_DATABASE_URL` apuntando a una base exclusiva de
+pruebas cuyo nombre contenga `test`; crean el esquema de la aplicación y
+eliminan únicamente los usuarios generados por las pruebas. Nunca usar la URL
+de producción. Para pruebas de navegador opcionales, instalar Playwright en el
+entorno de desarrollo y seguir las instrucciones de `test_auth_browser.py`.

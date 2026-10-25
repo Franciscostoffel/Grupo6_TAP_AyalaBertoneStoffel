@@ -1,0 +1,62 @@
+/* Acceso: reutiliza los componentes y las variables de ambos temas. */
+.auth-view {
+    display: grid;
+    place-items: center;
+    min-height: 60vh;
+}
+
+.auth-card {
+    width: 100%;
+    max-width: 440px;
+}
+
+.auth-card h1 {
+    font-size: 28px;
+}
+
+.auth-intro {
+    margin: 12px 0 24px;
+}
+
+.auth-loading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.auth-switch {
+    width: 100%;
+    margin-top: 16px;
+}
+
+#password-help {
+    margin-top: 8px;
+}
+
+.session-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+}
+
+.session-email {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--text-2);
+}
+
+@media (max-width: 900px) {
+    .session-email { display: none; }
+    .navbar-inner { gap: 10px; }
+    .nav-links a { padding: 8px; }
+}
+
+@media (max-width: 680px) {
+    .navbar-inner { flex-wrap: wrap; height: auto; min-height: var(--nav-height); padding-top: 10px; padding-bottom: 10px; }
+    .session-controls { order: 3; width: 100%; justify-content: flex-end; }
+    .session-email { display: block; max-width: 55vw; margin-right: auto; }
+}

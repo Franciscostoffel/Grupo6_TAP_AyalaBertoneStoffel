@@ -7,6 +7,7 @@
 import { BANKS, SECTIONS } from "./config.js";
 
 export const state = {
+    user: null,
     capital: 0,
     plazo: 0,
     options: [],       // todas las opciones calculadas por el backend
@@ -14,6 +15,16 @@ export const state = {
     selectedBank: BANKS[0].name,
     selectedSection: SECTIONS.FIXED_TERM
 };
+
+export function clearSessionState() {
+    state.user = null;
+    state.capital = 0;
+    state.plazo = 0;
+    state.options = [];
+    state.fixedTerms = [];
+    state.selectedBank = BANKS[0].name;
+    state.selectedSection = SECTIONS.FIXED_TERM;
+}
 
 export function setAnalysis(data) {
     state.capital = data.capital;

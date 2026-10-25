@@ -1,6 +1,8 @@
 """Endpoint POST /api/analyze: lo llama el frontend al tocar "Analizar inversiones"."""
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+
+from backend.api.dependencies import get_current_user, require_same_origin
 
 from backend.schemas.investment import InvestmentRequest, InvestmentResponse
 from backend.services import analysis_service
@@ -9,7 +11,8 @@ from backend.services.exceptions import DataNotReadyError, InvalidRiskError, NoO
 router = APIRouter(prefix="/api", tags=["Análisis"])
 
 
-@router.post("/analyze", response_model=InvestmentResponse)
+@router.post("/analyze", response_model=InvestmentResponse,
+             dependencies=[Depends(get_current_user), Depends(require_same_origin)])
 async def analyze_investment(data: InvestmentRequest):
     """Compara plazos fijos y fondos según capital, plazo y riesgo."""
     try:

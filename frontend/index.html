@@ -29,7 +29,7 @@
 
 <body>
 
-    <a class="skip-link" href="#simulador">Saltar al simulador</a>
+    <a class="skip-link" href="#auth-title">Saltar al contenido</a>
 
     <!-- Barra de navegacion superior. -->
 
@@ -43,11 +43,16 @@
                 <span class="brand-name">Inversión Inteligente</span>
             </a>
 
-            <nav class="nav-links" aria-label="Secciones">
+            <nav class="nav-links auth-only hidden" aria-label="Secciones">
                 <a href="#simulador">Simular</a>
                 <a href="#como-funciona">Cómo funciona</a>
                 <a href="#fuentes">Fuentes</a>
             </nav>
+
+            <div class="session-controls auth-only hidden">
+                <span id="user-email" class="session-email"></span>
+                <button type="button" id="logout-button" class="btn btn-ghost">Cerrar sesión</button>
+            </div>
 
             <button
                 type="button"
@@ -64,6 +69,37 @@
 
 
     <main id="top" class="container">
+
+        <p id="session-feedback" class="error hidden" role="alert"></p>
+        <section id="auth-view" class="auth-view" aria-labelledby="auth-title">
+            <div class="card auth-card">
+                <span class="eyebrow">Inversión Inteligente</span>
+                <h1 id="auth-title" tabindex="-1">Iniciá sesión</h1>
+                <p class="muted auth-intro">Ingresá a tu cuenta para comparar opciones de inversión.</p>
+                <div id="auth-loading" class="auth-loading" role="status">
+                    <span class="spinner" aria-hidden="true"></span> Comprobando tu sesión...
+                </div>
+                <form id="auth-form" class="hidden">
+                    <div class="form-group">
+                        <label for="auth-email">Email</label>
+                        <input id="auth-email" name="email" type="email" autocomplete="username"
+                               maxlength="254" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="auth-password">Contraseña</label>
+                        <input id="auth-password" name="password" type="password" autocomplete="current-password"
+                               maxlength="128" aria-describedby="password-help" required>
+                        <p id="password-help" class="muted hidden">Usá entre 15 y 128 caracteres. Podés usar una frase.</p>
+                    </div>
+                    <button type="submit" id="auth-submit" class="btn btn-primary btn-block">Ingresar</button>
+                </form>
+                <button type="button" id="auth-toggle" class="btn btn-ghost auth-switch hidden">Crear una cuenta</button>
+                <button type="button" id="auth-retry" class="btn btn-primary hidden">Reintentar conexión</button>
+                <noscript><p>Activá JavaScript para iniciar sesión y usar la aplicación.</p></noscript>
+            </div>
+        </section>
+
+        <div id="app-content" class="hidden">
 
         <!-- Encabezado, explicacion breve y formulario de datos. -->
 
@@ -366,6 +402,7 @@
 
         </section>
 
+        </div>
     </main>
 
 
