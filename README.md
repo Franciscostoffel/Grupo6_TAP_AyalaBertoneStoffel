@@ -42,7 +42,7 @@ backend/
 │   └── sync_service.py           Ejecuta ambas sincronizaciones en paralelo
 ├── domain/                 Reglas puras: riesgo, rendimientos, tasas de plazo fijo, bancos
 ├── clients/                Consultas HTTP a ArgentinaDatos, CompararFondos y Gemini
-├── db/                     Conexión, esquema y repositorios de SQLite
+├── db/                     Conexión, esquema y repositorios de PostgreSQL
 └── tasks/scheduler.py      Sincronización programada cada hora
 ```
 
@@ -113,7 +113,7 @@ Si no publica una para ese plazo exacto, se usa la del plazo publicado más
 cercano por debajo (la tasa general cuenta como la de 30 días) y la tarjeta
 aclara qué tasa se tomó.
 
-El backend guarda una copia local en SQLite para que el análisis no dependa de
+El backend guarda una copia local en PostgreSQL para que el análisis no dependa de
 una consulta externa en cada solicitud. Las dos fuentes se sincronizan al iniciar la aplicación y luego cada hora.
 Los análisis reutilizan la copia local y no consultan las APIs externas. Si
 los datos tienen menos de una hora, la sincronización también se salta para
@@ -211,22 +211,22 @@ inmediatamente. La aplicación actual no requiere API keys ni otras variables.
 Mantener un único worker y una instancia para evitar duplicar el scheduler.
 
 El health check en `/` comprueba que la web responde, pero no verifica la
-disponibilidad de datos en SQLite ni el éxito de las consultas externas.
+disponibilidad de datos en PostgreSQL ni el éxito de las consultas externas.
 
 ### Caché y ejecución del job en el plan gratuito
 
-SQLite contiene catálogos de tasas y fondos; no almacena los inputs del usuario.
-En el contenedor, la caché se crea en `/main/investments.db` durante el startup.
-Render Free pierde los archivos locales al reiniciar, redeployar o suspender
-el servicio. La aplicación reconstruye la caché consultando las fuentes.
+PostgreSQL contiene catálogos de tasas y fondos; no almacena los inputs del
+usuario. En Docker local, el servicio `db` conserva la información en el volumen
+`postgres_data`. La aplicación reconstruye la caché consultando las fuentes si
+la base todavía no tiene datos.
 
 El servicio gratuito se suspende después de 15 minutos sin tráfico entrante.
 Mientras está suspendido, el job no se ejecuta. Al volver a arrancar, se lanza
 una sincronización inicial; las siguientes se ejecutan cada hora mientras
 el proceso permanezca activo. Este plan no garantiza consultas horarias
 continuas. Si ese requisito es obligatorio, utilizar una instancia siempre
-activa de pago. Un disco persistente también requiere configurar la ruta de
-SQLite en el backend; agregar un disco por sí solo no conserva la caché actual.
+activa de pago. Un disco persistente por sí solo no configura una conexión a
+PostgreSQL; el servicio debe tener definida la variable `DATABASE_URL`.
 
 ### Verificar el deploy
 
@@ -244,7 +244,7 @@ SQLite en el backend; agregar un disco por sí solo no conserva la caché actual
   fuentes hayan funcionado. Verificar que los resultados incluyan datos de
   ArgentinaDatos y CompararFondos usando un perfil de riesgo adecuado.
 - Comprobar que el análisis funciona en solicitudes sucesivas: el endpoint
-  lee los catálogos almacenados en SQLite.
+  lee los catálogos almacenados en PostgreSQL.
 - Con el servicio activo durante una hora, comprobar una nueva ejecución
   del background job en los logs.
 - Subir o mergear un cambio autorizado a `main` y comprobar el deploy

@@ -6,7 +6,7 @@ Este archivo solo arma la aplicación. La lógica está repartida en capas:
     services/  coordina cada tarea (analizar, recomendar, sincronizar)
     domain/    reglas de negocio y fórmulas (riesgo, rendimientos, bancos)
     clients/   consulta APIs externas (ArgentinaDatos, CompararFondos, Gemini)
-    db/        guarda y lee datos en SQLite
+    db/        guarda y lee datos en PostgreSQL
     schemas/   formato de los datos que entran y salen de la API
     tasks/     actualización automática cada hora
     core/      configuración (URLs, tiempos, bancos)
@@ -42,7 +42,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Inversión Inteligente",
-    description="Comparador Concurrente con SQLite, APIs y Money Market",
+    description="Comparador Concurrente con PostgreSQL, APIs y Money Market",
     version="1.0.0",
     lifespan=lifespan,
 )

@@ -14,7 +14,7 @@ def save_rate(nombre: str, tipo: str, tna: float, fecha_datos: str | None = None
         INSERT INTO rates (
             nombre, tipo, tna, garantizado, fuente, fecha_datos, updated_at
         )
-        VALUES (?, ?, ?, 1, 'ArgentinaDatos', ?, CURRENT_TIMESTAMP)
+        VALUES (%s, %s, %s, 1, 'ArgentinaDatos', %s, CURRENT_TIMESTAMP)
         ON CONFLICT(nombre) DO UPDATE SET
             tipo = excluded.tipo,
             tna = excluded.tna,
@@ -31,7 +31,7 @@ def save_term(banco: str, plazo_min: int, plazo_max: int, tna: float):
     conn.execute("""
         INSERT INTO fixed_deposit_terms
             (banco, plazo_min_dias, plazo_max_dias, tna, fecha_datos)
-        VALUES (?, ?, ?, ?, CURRENT_DATE)
+        VALUES (%s, %s, %s, %s, CURRENT_DATE)
         ON CONFLICT(banco, plazo_min_dias, plazo_max_dias) DO UPDATE SET
             tna = excluded.tna,
             fecha_datos = excluded.fecha_datos
@@ -43,7 +43,7 @@ def save_term(banco: str, plazo_min: int, plazo_max: int, tna: float):
 def clear_all():
     """Borra todos los plazos fijos antes de guardar los datos nuevos."""
     conn = get_connection()
-    conn.execute("DELETE FROM rates WHERE tipo = ?", (FIXED_DEPOSIT_TYPE,))
+    conn.execute("DELETE FROM rates WHERE tipo = %s", (FIXED_DEPOSIT_TYPE,))
     conn.execute("DELETE FROM fixed_deposit_terms")
     conn.commit()
     conn.close()

@@ -11,7 +11,7 @@ def mark_source_synced(fuente: str):
     conn = get_connection()
     conn.execute("""
         INSERT INTO source_cache (fuente, synced_at)
-        VALUES (?, CURRENT_TIMESTAMP)
+        VALUES (%s, CURRENT_TIMESTAMP)
         ON CONFLICT(fuente) DO UPDATE SET synced_at = excluded.synced_at
     """, (fuente,))
     conn.commit()
@@ -24,7 +24,7 @@ def investment_cache_is_fresh() -> bool:
     filas = conn.execute("""
         SELECT fuente, synced_at
         FROM source_cache
-        WHERE fuente IN (?, ?)
+        WHERE fuente IN (%s, %s)
     """, (SOURCE_FIXED_DEPOSITS, SOURCE_FUNDS)).fetchall()
     conn.close()
 
@@ -33,9 +33,7 @@ def investment_cache_is_fresh() -> bool:
         return False
 
     for fuente, synced_at in filas:
-        # Convertimos el texto "2026-10-13 14:30:00" a segundos para poder restar.
-        momento = time.mktime(time.strptime(synced_at, "%Y-%m-%d %H:%M:%S"))
-        segundos_transcurridos = time.time() - momento
+        segundos_transcurridos = time.time() - synced_at.timestamp()
         if segundos_transcurridos >= CACHE_TTL_SECONDS:
             return False
     return True
