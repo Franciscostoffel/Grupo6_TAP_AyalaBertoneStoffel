@@ -1,9 +1,31 @@
 services:
+  db:
+    image: postgres:16
+    container_name: inversion-postgres
+    environment:
+      POSTGRES_DB: investments
+      POSTGRES_USER: inversion
+      POSTGRES_PASSWORD: inversion
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inversion -d investments"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   app:
     build: .
     container_name: inversion-inteligente
     environment:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://inversion:inversion@db:5432/investments}
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8000:8000"
+
+volumes:
+  postgres_data:

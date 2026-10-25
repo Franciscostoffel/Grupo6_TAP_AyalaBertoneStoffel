@@ -17,7 +17,7 @@ def save_fund(fondo: dict):
             fecha_datos, fecha_vcp, depositaria, gerente, gestora, minimo,
             plazo_liq, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, CURRENT_TIMESTAMP)
         ON CONFLICT(nombre) DO UPDATE SET
             banco = excluded.banco,
             tipo = excluded.tipo,

@@ -4,3 +4,4 @@ httpx
 apscheduler
 google-genai
 python-dotenv
+psycopg[binary]

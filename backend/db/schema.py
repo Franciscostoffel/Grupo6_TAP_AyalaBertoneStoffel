@@ -1,4 +1,4 @@
-"""Crea las tablas de la base de datos si todavía no existen."""
+"""Crea las tablas de PostgreSQL si todavía no existen."""
 
 from backend.db.connection import get_connection
 
@@ -91,12 +91,18 @@ def init_db():
 
 def agregar_columnas_faltantes(cursor, tabla, columnas):
     """Agrega a la tabla las columnas de la lista que todavía no tiene."""
-    # PRAGMA table_info devuelve una fila por columna; el nombre está en la posición 1.
-    cursor.execute(f"PRAGMA table_info({tabla})")
-    columnas_existentes = []
-    for fila in cursor.fetchall():
-        columnas_existentes.append(fila[1])
+    cursor.execute(
+        """
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = %s
+        """,
+        (tabla,),
+    )
+    columnas_existentes = {fila[0] for fila in cursor.fetchall()}
 
     for nombre, definicion in columnas:
         if nombre not in columnas_existentes:
-            cursor.execute(f"ALTER TABLE {tabla} ADD COLUMN {nombre} {definicion}")
+            cursor.execute(
+                f"ALTER TABLE {tabla} ADD COLUMN {nombre} {definicion}"
+            )

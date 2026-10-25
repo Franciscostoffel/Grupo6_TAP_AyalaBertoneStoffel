@@ -4,6 +4,7 @@ Todo valor que pueda cambiar (URLs, tiempos, nombres de bancos) vive acá para
 no tener que buscarlo dentro de la lógica.
 """
 
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -19,8 +20,12 @@ CARPETA_PROYECTO = Path(__file__).resolve().parents[2]
 # en .env, tanto al ejecutar con Docker como con uvicorn.
 load_dotenv(CARPETA_PROYECTO / ".env")
 
-# Se resuelve desde el directorio de trabajo, igual que antes de separar capas.
-DB_PATH = "investments.db"
+# PostgreSQL es la única fuente de persistencia. En desarrollo puede apuntar a
+# la base local de docker-compose y en producción a la URL del proveedor.
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://inversion:inversion@localhost:5432/investments",
+)
 
 FRONTEND_PATH = CARPETA_PROYECTO / "frontend"
 

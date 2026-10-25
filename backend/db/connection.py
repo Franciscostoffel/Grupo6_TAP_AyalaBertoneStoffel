@@ -1,14 +1,14 @@
-"""Conexión a la base de datos SQLite que usamos como caché local."""
+"""Conexión a PostgreSQL usando la URL configurada en el entorno."""
 
-import sqlite3
+import psycopg
 
-from backend.core.config import DB_PATH
+from backend.core.config import DATABASE_URL
 
 
 def get_connection():
-    """Abre la base de datos.
+    """Abre una conexión a PostgreSQL.
 
     Quien la usa debe llamar a conn.commit() si guardó algo y siempre a
     conn.close() al terminar.
     """
-    return sqlite3.connect(DB_PATH)
+    return psycopg.connect(DATABASE_URL)
