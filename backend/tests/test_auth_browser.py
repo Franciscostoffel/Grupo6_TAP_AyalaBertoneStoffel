@@ -39,7 +39,7 @@ class AuthBrowserTests(unittest.TestCase):
         if "test" not in conninfo_to_dict(url).get("dbname", "").lower():
             raise RuntimeError("Usar una base exclusiva cuyo nombre contenga test.")
         email = f"auth-browser-{uuid4()}@example.com"
-        password = "browser test password phrase"
+        password = "testpass"
         artifacts = Path(tempfile.gettempdir()) / "inversion-auth-preview"
         artifacts.mkdir(exist_ok=True)
         with ExitStack() as stack:
@@ -90,8 +90,17 @@ class AuthBrowserTests(unittest.TestCase):
             page.locator("#auth-toggle").click()
             page.locator("#auth-email").fill(email)
             page.locator("#auth-password").fill(password)
+            self.assertEqual(page.locator("#auth-password").get_attribute("minlength"), "8")
+            page.get_by_role("button", name="Mostrar contraseña", exact=True).click()
+            self.assertEqual(page.locator("#auth-password").get_attribute("type"), "text")
+            self.assertEqual(page.locator("#auth-password").input_value(), password)
+            self.assertEqual(page.locator("#password-toggle").get_attribute("aria-pressed"), "true")
+            page.get_by_role("button", name="Ocultar contraseña", exact=True).click()
+            self.assertEqual(page.locator("#auth-password").get_attribute("type"), "password")
+            page.get_by_role("button", name="Mostrar contraseña", exact=True).click()
             page.locator("#auth-submit").click()
             page.locator("#app-content").wait_for(state="visible")
+            self.assertEqual(page.locator("#auth-password").get_attribute("type"), "password")
             self.assertEqual(page.locator("#user-email").inner_text(), email)
             cookies = context.cookies()
             self.assertTrue(next(cookie for cookie in cookies if cookie["name"] == "session")["httpOnly"])

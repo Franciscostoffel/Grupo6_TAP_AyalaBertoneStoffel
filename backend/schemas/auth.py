@@ -17,7 +17,7 @@ class LoginRequest(BaseModel):
 
 
 class RegisterRequest(LoginRequest):
-    password: SecretStr = Field(min_length=15, max_length=128)
+    password: SecretStr = Field(min_length=8, max_length=128)
 
 
 class UserResponse(BaseModel):

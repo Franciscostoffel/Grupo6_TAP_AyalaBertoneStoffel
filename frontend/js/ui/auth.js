@@ -11,9 +11,17 @@ const loading = document.getElementById("auth-loading");
 const feedback = document.getElementById("session-feedback");
 const retry = document.getElementById("auth-retry");
 const logoutButton = document.getElementById("logout-button");
+const passwordToggle = document.getElementById("password-toggle");
 let registering = false;
 let version = 0;
 let callbacks;
+
+function setPasswordVisibility(visible) {
+    form.elements.password.type = visible ? "text" : "password";
+    passwordToggle.setAttribute("aria-pressed", String(visible));
+    passwordToggle.setAttribute("aria-label", visible ? "Ocultar contraseña" : "Mostrar contraseña");
+    passwordToggle.querySelector(".password-eye-slash").classList.toggle("hidden", !visible);
+}
 
 function showError(message) {
     feedback.textContent = message;
@@ -29,10 +37,11 @@ function setMode() {
     title.textContent = registering ? "Creá tu cuenta" : "Iniciá sesión";
     submit.textContent = registering ? "Crear cuenta" : "Ingresar";
     toggle.textContent = registering ? "Ya tengo cuenta" : "Crear una cuenta";
-    form.elements.password.minLength = registering ? 15 : 1;
+    form.elements.password.minLength = registering ? 8 : 1;
     form.elements.password.autocomplete = registering ? "new-password" : "current-password";
     document.getElementById("password-help").classList.toggle("hidden", !registering);
     form.elements.password.value = "";
+    setPasswordVisibility(false);
     clearError();
 }
 
@@ -43,6 +52,7 @@ function displayUser(user) {
     document.getElementById("user-email").textContent = user.email;
     document.querySelector(".skip-link").href = "#simulador";
     form.reset();
+    setPasswordVisibility(false);
     clearError();
     callbacks.onAuthenticated(user);
 }
@@ -97,6 +107,9 @@ async function restoreSession() {
 export function initAuth(handlers) {
     callbacks = handlers;
     setMode();
+    passwordToggle.addEventListener("click", () => {
+        setPasswordVisibility(form.elements.password.type === "password");
+    });
     toggle.addEventListener("click", () => {
         registering = !registering;
         setMode();
@@ -121,6 +134,7 @@ export function initAuth(handlers) {
         } finally {
             data.password = "";
             form.elements.password.value = "";
+            setPasswordVisibility(false);
             submit.disabled = toggle.disabled = false;
             submit.textContent = registering ? "Crear cuenta" : "Ingresar";
         }

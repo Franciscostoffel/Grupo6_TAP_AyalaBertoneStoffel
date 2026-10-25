@@ -114,6 +114,15 @@ class AuthHttpTests(unittest.TestCase):
         self.assertNotIn("input", response.json())
         self.assertEqual(response.headers["cache-control"], "no-store")
 
+    def test_registration_password_length_boundaries(self):
+        with patch.object(auth_service, "register", return_value=(self.user, new_session_token())) as register:
+            for length, expected in ((7, 422), (8, 201), (128, 201), (129, 422)):
+                with self.subTest(length=length):
+                    response = self.client.post("/api/auth/register", headers=self.headers,
+                                                json={"email": self.user["email"], "password": "a" * length})
+                    self.assertEqual(response.status_code, expected)
+            self.assertEqual(register.call_count, 2)
+
     def test_login_error_and_duplicate_email(self):
         with patch.object(auth_service, "login", side_effect=InvalidCredentialsError("Email o contraseña incorrectos.")):
             response = self.client.post("/api/auth/login", json=self.payload, headers=self.headers)

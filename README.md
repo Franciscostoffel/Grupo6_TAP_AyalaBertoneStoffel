@@ -288,7 +288,7 @@ actual; otros dispositivos mantienen sus propias sesiones.
 | POST | `/api/auth/logout` | Invalida sesión y borra cookie; 204 incluso sin sesión. |
 | POST | `/api/analyze` | Requiere una sesión vigente. |
 
-La contraseña de registro debe tener entre 15 y 128 caracteres; los espacios
+La contraseña de registro debe tener entre 8 y 128 caracteres; los espacios
 se conservan. El email se normaliza a minúsculas y es único. Un registro
 duplicado devuelve 409, lo que permite saber que ese email ya está registrado.
 El login devuelve el mismo error para email inexistente y contraseña incorrecta.

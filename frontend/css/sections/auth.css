@@ -33,6 +33,40 @@
     margin-top: 8px;
 }
 
+.password-field {
+    position: relative;
+}
+
+.password-field input {
+    padding-right: 52px;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text-2);
+    cursor: pointer;
+}
+
+.password-toggle:hover {
+    background: var(--surface-2);
+    color: var(--text);
+}
+
+.password-toggle svg {
+    width: 22px;
+    height: 22px;
+}
+
 .session-controls {
     display: flex;
     align-items: center;
