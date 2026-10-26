@@ -32,15 +32,17 @@ La aplicación tiene un backend en FastAPI y un frontend sin frameworks.
 backend/
 ├── main.py                 Punto de entrada: crea la app, registra rutas y estáticos
 ├── core/config.py          Configuración: URLs, tiempos, caché y catálogo de bancos
-├── api/routes/             Endpoints HTTP (POST /api/analyze)
+├── api/routes/             Endpoints HTTP (POST /api/analyze, GET /api/bonds)
 ├── schemas/                Modelos Pydantic de entrada y salida de la API
 ├── services/               Casos de uso
 │   ├── analysis_service.py       Filtra por riesgo, calcula y ordena opciones
-│   ├── recommendation_service.py Recomendación con Gemini o local
+│   ├── bond_service.py           Lista letras y bonos y calcula su ganancia
+│   ├── recommendation_service.py Resumen informativo con Gemini o local
 │   ├── fixed_deposit_sync.py     Sincroniza plazos fijos
 │   ├── fund_sync.py              Sincroniza fondos comunes
-│   └── sync_service.py           Ejecuta ambas sincronizaciones en paralelo
-├── domain/                 Reglas puras: riesgo, rendimientos, tasas de plazo fijo, bancos
+│   ├── bond_sync.py              Sincroniza letras y bonos del Tesoro
+│   └── sync_service.py           Ejecuta las sincronizaciones en paralelo
+├── domain/                 Reglas puras: riesgo, rendimientos, tasas de plazo fijo, bancos, bonos
 ├── clients/                Consultas HTTP a ArgentinaDatos, CompararFondos y Gemini
 ├── db/                     Conexión, esquema y repositorios de PostgreSQL
 └── tasks/scheduler.py      Sincronización programada cada hora
@@ -79,9 +81,9 @@ frontend/
     ├── main.js             Punto de entrada: conecta los módulos
     ├── config.js           Bancos, enlaces oficiales y constantes
     ├── state.js            Último análisis recibido y banco/sección elegidos
-    ├── services/api.js     Consulta a `/api/analyze`
+    ├── services/api.js     Consultas a `/api/analyze` y `/api/bonds`
     ├── ui/                 Vistas: formulario, resultados, pestañas, panel del
-    │                       banco, plantillas de tarjetas, tema y tooltip
+    │                       banco, bonos, plantillas de tarjetas, tema y tooltip
     └── utils/              Formateo de números y escape de HTML
 ```
 
@@ -102,6 +104,9 @@ mezclar consultas, cálculos y presentación en la misma función.
 - **Billeteras virtuales:** Mercado Pago y Ualá. El dinero que se deja en la
 	cuenta de estas billeteras rinde a través de fondos comunes que administran
 	ellas mismas, por eso se obtienen de la misma fuente de fondos.
+- **Bonos del Tesoro:** ArgentinaDatos, con precios de BYMA.
+	- `/v1/finanzas/letras`: LECAP y BONCAP a tasa fija en pesos, con TNA y TEA.
+	- `/v1/finanzas/bonos-cer`: bonos que ajustan por inflación, con su TIR real.
 
 Cada fondo se asocia al banco o billetera dueño de su sociedad gerente (la
 empresa que lo administra), según la lista `SOCIEDADES_GERENTES` de
@@ -113,14 +118,24 @@ Si no publica una para ese plazo exacto, se usa la del plazo publicado más
 cercano por debajo (la tasa general cuenta como la de 30 días) y la tarjeta
 aclara qué tasa se tomó.
 
+Los bonos se muestran en su propio apartado y no entran en el análisis por
+riesgo. Para los de tasa fija, la ganancia supone comprarlos hoy al precio de
+mercado y mantenerlos hasta el vencimiento: capital x ((1 + TEA) ^ (días / 365) - 1),
+sin comisiones. Se descartan las letras sin una tasa positiva (por ejemplo los
+duales) y las que vencen en más de un año, el mismo horizonte máximo del
+simulador: a ese plazo la fuente incluye bonos que pagan cupones (como el
+TY30P) y el cálculo de ganancia al vencimiento deja de ser válido. En los
+CER solo se muestra la TIR real, porque la ganancia en pesos depende de la
+inflación futura.
+
 El backend guarda una copia local en PostgreSQL para que el análisis no dependa de
-una consulta externa en cada solicitud. Las dos fuentes se sincronizan al iniciar la aplicación y luego cada hora.
+una consulta externa en cada solicitud. Las fuentes se sincronizan al iniciar la aplicación y luego cada hora.
 Los análisis reutilizan la copia local y no consultan las APIs externas. Si
 los datos tienen menos de una hora, la sincronización también se salta para
 evitar llamadas repetidas. Si una fuente falla, se conserva la última
 información válida almacenada.
 
-Los FCI se clasifican para la recomendación usando el tipo de fondo y el
+Los FCI se clasifican por riesgo usando el tipo de fondo y el
 horizonte publicados por la fuente: mercado de dinero y renta fija corta como
 riesgo bajo; renta fija de mayor horizonte y fondos mixtos como moderado; renta
 variable como alto. La variación del último día se muestra como dato histórico.
@@ -129,8 +144,12 @@ rendimiento de los últimos 30 días; no representa una tasa garantizada.
 
 ## Configurar Gemini
 
-La recomendación textual se genera con Gemini usando las opciones que primero
-filtra y calcula el backend. La clave nunca se escribe en el código.
+El resumen informativo se genera con Gemini usando las opciones que primero
+filtra y calcula el backend. Se le indica que solo describa los resultados y
+que no recomiende ni aconseje invertir, porque eso sería asesoramiento
+financiero. En la página, el resumen siempre va acompañado de un aviso
+destacado que aclara que no es una recomendación de inversión ni garantiza
+rendimientos. La clave nunca se escribe en el código.
 
 Si alguna clave fue escrita en `docker-compose.yml` o publicada en Git, revocala
 desde Google AI Studio y generá otra antes de continuar.
@@ -155,8 +174,8 @@ clave y nunca se sube a GitHub. En Render, la clave se carga en el panel del
 servicio, en **Environment**, con el nombre `GEMINI_API_KEY`.
 
 El modelo predeterminado es `gemini-3.5-flash-lite`, porque esta aplicación
-solo necesita redactar una recomendación breve. Si no se configura la clave,
-la aplicación continúa funcionando con una recomendación local.
+solo necesita redactar un resumen breve. Si no se configura la clave,
+la aplicación continúa funcionando con un resumen local.
 
 Para comprobar que una solicitud llegó a Gemini, revisá los logs del contenedor:
 
@@ -210,7 +229,7 @@ En Docker local, si no se define esa variable, se utiliza el puerto 8000.
 `PYTHONUNBUFFERED=1` está definido en la imagen para mostrar los logs de Python
 inmediatamente. Configurar `DATABASE_URL`, `APP_ENV=production` y
 `AUTH_ALLOWED_ORIGINS` con el origen HTTPS público, sin rutas ni barra final.
-`GEMINI_API_KEY` es opcional para las recomendaciones.
+`GEMINI_API_KEY` es opcional para el resumen con IA.
 Mantener un único worker y una instancia para evitar duplicar el scheduler.
 
 El health check en `/` comprueba que la web responde, pero no verifica la
@@ -218,7 +237,7 @@ disponibilidad de datos en PostgreSQL ni el éxito de las consultas externas.
 
 ### Caché y ejecución del job en el plan gratuito
 
-PostgreSQL contiene catálogos de tasas y fondos, usuarios y sesiones; no almacena
+PostgreSQL contiene catálogos de tasas, fondos y bonos, usuarios y sesiones; no almacena
 los inputs del simulador. En Docker local, el servicio `db` conserva la información en el volumen
 `postgres_data`. La aplicación reconstruye la caché consultando las fuentes si
 la base todavía no tiene datos.
@@ -242,7 +261,7 @@ PostgreSQL; el servicio debe tener definida la variable `DATABASE_URL`.
   {"capital": 500000, "plazo": 30, "riesgo": "bajo"}
   ```
 
-- Esperar una respuesta 200 con opciones y recomendación después de cargar
+- Esperar una respuesta 200 con opciones y resumen después de cargar
   la caché. Un 503 inicial indica que todavía no hay datos utilizables.
 - Revisar los logs de sincronización y los mensajes `[JOB ERROR]`.
   El mensaje "Sincronización completada" por sí solo no confirma que ambas
@@ -287,6 +306,7 @@ actual; otros dispositivos mantienen sus propias sesiones.
 | GET | `/api/auth/me` | UUID, email y fecha de creación; 401 sin sesión vigente. |
 | POST | `/api/auth/logout` | Invalida sesión y borra cookie; 204 incluso sin sesión. |
 | POST | `/api/analyze` | Requiere una sesión vigente. |
+| GET | `/api/bonds` | Requiere una sesión vigente. Con `?capital=` calcula la ganancia de cada bono a tasa fija. |
 
 La contraseña de registro debe tener entre 8 y 128 caracteres; los espacios
 se conservan. El email se normaliza a minúsculas y es único. Un registro
