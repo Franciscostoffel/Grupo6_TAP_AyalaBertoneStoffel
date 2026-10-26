@@ -45,6 +45,7 @@
 
             <nav class="nav-links auth-only hidden" aria-label="Secciones">
                 <a href="#simulador">Simular</a>
+                <a href="#bonos">Bonos</a>
                 <a href="#como-funciona">Cómo funciona</a>
                 <a href="#fuentes">Fuentes</a>
             </nav>
@@ -122,7 +123,7 @@
                 <h1>Inversión Inteligente</h1>
 
                 <p class="hero-lead">
-                    Te ayudamos a encontrar una opción sencilla
+                    Compará opciones de inversión con datos públicos
                     según cuánto dinero querés invertir, por cuánto tiempo
                     y cuánto riesgo estás dispuesto a aceptar.
                 </p>
@@ -138,7 +139,7 @@
                     </li>
                     <li>
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
-                        Recomendación orientativa con IA
+                        Resumen informativo generado con IA
                     </li>
                 </ul>
 
@@ -261,7 +262,7 @@
         </section>
 
 
-        <!-- Estado visible mientras el backend prepara la recomendacion. -->
+        <!-- Estado visible mientras el backend prepara el resumen. -->
 
         <section
             id="loading"
@@ -286,7 +287,7 @@
         </section>
 
 
-        <!-- Resultados: resumen, opciones por banco y recomendacion. -->
+        <!-- Resultados: resumen, aviso legal y opciones por banco. -->
 
         <section
             id="results"
@@ -323,7 +324,7 @@
             </div>
 
 
-            <!-- Recomendacion textual generada por el backend. -->
+            <!-- Resumen informativo generado por el backend (con IA o local). -->
 
             <div class="ai-card">
 
@@ -331,11 +332,11 @@
                     <span class="ai-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24"><path d="M12 3l1.9 4.6L18.5 9.5l-4.6 1.9L12 16l-1.9-4.6L5.5 9.5l4.6-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
                     </span>
-                    <h3>Recomendación de IA</h3>
+                    <h3>Resumen informativo generado con IA</h3>
                     <button
                         type="button"
                         class="info-button"
-                        aria-label="Cómo se genera la recomendación"
+                        aria-label="Cómo se genera el resumen"
                         aria-describedby="ai-info-text"
                     >
                         i
@@ -345,15 +346,36 @@
                         class="info-tooltip"
                         role="tooltip"
                     >
-                        Compara las opciones según tu riesgo, el rendimiento
-                        estimado y la facilidad para retirar el dinero. Es una
-                        guía orientativa, no una garantía.
+                        Describe automáticamente los resultados calculados:
+                        rendimiento estimado, riesgo y facilidad para retirar
+                        el dinero. No es un consejo de inversión.
                     </div>
                 </div>
 
                 <p id="ai-recommendation" class="ai-text"></p>
 
             </div>
+
+
+            <!-- Aviso legal: debe verse siempre junto al resumen. -->
+
+            <aside class="disclaimer" role="note" aria-labelledby="disclaimer-title">
+                <span class="disclaimer-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17.5v.5"/></svg>
+                </span>
+                <div>
+                    <h3 id="disclaimer-title">Esto no es una recomendación de inversión</h3>
+                    <p>
+                        Es una <strong>simulación informativa</strong> hecha automáticamente
+                        con datos públicos. <strong>No es asesoramiento financiero</strong>
+                        y <strong>no garantizamos ningún rendimiento</strong>: las tasas y
+                        los precios cambian, y en los productos que no están garantizados
+                        podés perder dinero. La decisión es tuya. Antes de invertir,
+                        confirmá las condiciones con la entidad y, si lo necesitás,
+                        consultá con un asesor registrado ante la CNV.
+                    </p>
+                </div>
+            </aside>
 
 
             <!-- Catalogo de inversiones agrupado por banco. -->
@@ -386,6 +408,41 @@
         </section>
 
 
+        <!-- Letras y bonos del Tesoro con precios de mercado. -->
+
+        <section class="bonds" id="bonos" aria-labelledby="bonds-title">
+
+            <div class="section-header">
+                <div>
+                    <h2 id="bonds-title">Bonos del Tesoro</h2>
+                    <p class="muted">
+                        Letras y bonos en pesos que cotizan en BYMA. Se compran
+                        a través de un broker o del home banking.
+                    </p>
+                </div>
+            </div>
+
+            <div id="bonds-panel" class="bank-panel" aria-live="polite"></div>
+
+            <aside class="disclaimer" role="note">
+                <span class="disclaimer-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 3l9.5 17h-19z"/><path d="M12 10v4M12 17.5v.5"/></svg>
+                </span>
+                <div>
+                    <h3>Datos solo informativos</h3>
+                    <p>
+                        Los precios y tasas son de mercado y cambian todo el tiempo
+                        (fuente: ArgentinaDatos, precios de BYMA). Mostrarlos
+                        <strong>no es una recomendación de compra</strong> ni asegura
+                        ningún rendimiento. Si vendés antes del vencimiento, el precio
+                        puede ser menor al que pagaste.
+                    </p>
+                </div>
+            </aside>
+
+        </section>
+
+
         <!-- Pasos del analisis, a modo de guia para el usuario. -->
 
         <section class="how" id="como-funciona" aria-labelledby="how-title">
@@ -405,8 +462,8 @@
                 </li>
                 <li class="step">
                     <span class="step-number">3</span>
-                    <h3>Leé la recomendación</h3>
-                    <p>La IA resume las opciones según rendimiento, riesgo y facilidad para retirar el dinero.</p>
+                    <h3>Leé el resumen</h3>
+                    <p>La IA describe los resultados según rendimiento, riesgo y facilidad para retirar el dinero. Es información, no un consejo: la decisión es tuya.</p>
                 </li>
             </ol>
 
@@ -429,8 +486,9 @@
                     <span class="brand-name">Inversión Inteligente</span>
                 </a>
                 <p class="muted">
-                    Información orientativa. No constituye asesoramiento financiero
-                    ni garantiza rendimientos futuros.
+                    Simulador con fines informativos. No constituye asesoramiento
+                    financiero ni una recomendación de inversión, y no garantiza
+                    rendimientos futuros.
                 </p>
             </div>
 
@@ -439,6 +497,7 @@
                 <ul>
                     <li><strong>Plazos fijos:</strong> ArgentinaDatos</li>
                     <li><strong>Fondos comunes:</strong> CompararFondos / CAFCI</li>
+                    <li><strong>Bonos:</strong> ArgentinaDatos (precios de BYMA)</li>
                     <li><a href="/docs" target="_blank" rel="noopener">Documentación de la API</a></li>
                 </ul>
             </div>

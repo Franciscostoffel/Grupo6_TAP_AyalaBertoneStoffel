@@ -4,6 +4,7 @@
 
 export const ANALYZE_ENDPOINT = "/api/analyze";
 export const AUTH_ENDPOINT = "/api/auth";
+export const BONDS_ENDPOINT = "/api/bonds";
 
 // Debe coincidir con la clave que lee el script en linea de index.html.
 export const THEME_STORAGE_KEY = "theme";
@@ -45,4 +46,10 @@ export const RISK_LEVELS = ["bajo", "moderado", "alto"];
 export const SECTIONS = {
     FIXED_TERM: "plazo_fijo",
     FUNDS: "fondos"
+};
+
+// Pestañas del apartado "Bonos". El valor coincide con el campo "tipo" del backend.
+export const BOND_SECTIONS = {
+    FIXED_RATE: "tasa_fija",
+    CER: "cer"
 };

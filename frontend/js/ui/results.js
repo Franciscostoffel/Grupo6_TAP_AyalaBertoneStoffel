@@ -21,7 +21,7 @@ export function hideLoading() {
     loading.classList.add("hidden");
 }
 
-/** Completa el resumen y la recomendacion, y muestra la seccion de resultados. */
+/** Completa los datos y el resumen de IA, y muestra la seccion de resultados. */
 export function showResults(data) {
     resultCapital.textContent = formatNumber(data.capital);
     resultPlazo.textContent = data.plazo;

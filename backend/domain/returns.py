@@ -34,3 +34,11 @@ def simple_period_return_pct(tna: float, plazo: int) -> float:
 def fixed_deposit_gain(capital: float, tna: float, plazo: int) -> float:
     """Ganancia de un plazo fijo (interés simple): capital x tasa x días / 365."""
     return capital * (tna / 100) * (plazo / 365)
+
+
+def effective_period_return_pct(tea: float, dias: int) -> float:
+    """Rendimiento de una tasa efectiva anual (TEA) para una cantidad de días.
+
+    Ejemplo: 26% efectivo anual en 90 días -> (1,26 ^ (90 / 365) - 1) x 100 = 5,86%.
+    """
+    return ((1 + tea / 100) ** (dias / 365) - 1) * 100

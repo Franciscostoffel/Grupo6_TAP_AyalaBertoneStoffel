@@ -1,5 +1,5 @@
 // ============================================================================
-// TOOLTIP DE LA RECOMENDACION DE IA
+// TOOLTIP DEL RESUMEN DE IA
 // En escritorio se abre con hover (CSS); en pantallas tactiles, con un toque.
 // ============================================================================
 

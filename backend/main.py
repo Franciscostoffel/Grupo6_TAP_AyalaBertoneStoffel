@@ -3,8 +3,8 @@
 Este archivo solo arma la aplicación. La lógica está repartida en capas:
 
     api/       recibe los pedidos HTTP del frontend
-    services/  coordina cada tarea (analizar, recomendar, sincronizar)
-    domain/    reglas de negocio y fórmulas (riesgo, rendimientos, bancos)
+    services/  coordina cada tarea (analizar, recomendar, listar bonos, sincronizar)
+    domain/    reglas de negocio y fórmulas (riesgo, rendimientos, bancos, bonos)
     clients/   consulta APIs externas (ArgentinaDatos, CompararFondos, Gemini)
     db/        guarda y lee datos en PostgreSQL
     schemas/   formato de los datos que entran y salen de la API
@@ -21,7 +21,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from backend.api.routes import analysis, auth
+from backend.api.routes import analysis, auth, bonds
 from backend.core.config import FRONTEND_PATH, validate_auth_config
 from backend.db.schema import init_db
 from backend.services.sync_service import sync_all_sources
@@ -51,6 +51,7 @@ app = FastAPI(
 # Las rutas de la API se registran antes que los archivos estáticos.
 app.include_router(auth.router)
 app.include_router(analysis.router)
+app.include_router(bonds.router)
 
 
 # ============================================================================

@@ -1,4 +1,4 @@
-"""Actualiza las dos fuentes externas: plazos fijos y fondos."""
+"""Actualiza las fuentes externas: plazos fijos, fondos y bonos."""
 
 import asyncio
 
@@ -6,12 +6,13 @@ import httpx
 
 from backend.core.config import EXTERNAL_HTTP_TIMEOUT_SECONDS
 from backend.db.repositories import source_cache_repository
+from backend.services.bond_sync import sync_bonds
 from backend.services.fixed_deposit_sync import sync_fixed_deposits
 from backend.services.fund_sync import sync_funds
 
 
 async def sync_all_sources():
-    """Descarga plazos fijos y fondos al mismo tiempo.
+    """Descarga plazos fijos, fondos y bonos al mismo tiempo.
 
     Si los datos guardados tienen menos de una hora, no se descarga nada.
     """
@@ -19,14 +20,15 @@ async def sync_all_sources():
         print("[CACHE] Datos vigentes; no se consultan las APIs externas.")
         return
 
-    print("[BACKGROUND JOB] Sincronizando plazos fijos y fondos...")
+    print("[BACKGROUND JOB] Sincronizando plazos fijos, fondos y bonos...")
     async with httpx.AsyncClient(
         timeout=EXTERNAL_HTTP_TIMEOUT_SECONDS, verify=False
     ) as client:
-        # asyncio.gather ejecuta las dos descargas en paralelo y espera a ambas.
+        # asyncio.gather ejecuta las descargas en paralelo y espera a todas.
         resultados = await asyncio.gather(
             sync_fixed_deposits(client),
             sync_funds(client),
+            sync_bonds(client),
             return_exceptions=True,
         )
         for resultado in resultados:

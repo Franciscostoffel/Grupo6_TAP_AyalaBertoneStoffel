@@ -29,6 +29,7 @@ def init_db():
     - rates: tasa general de plazo fijo de cada banco.
     - fixed_deposit_terms: tasa de cada rango de días de cada banco.
     - fci_funds: fondos comunes de inversión.
+    - bonds: letras y bonos del Tesoro (tasa fija y CER).
     - source_cache: cuándo se actualizó por última vez cada fuente.
     """
     conn = get_connection()
@@ -84,6 +85,19 @@ def init_db():
         )
     """)
     agregar_columnas_faltantes(cursor, "fci_funds", COLUMNAS_NUEVAS_FONDOS)
+
+    # tna y tea solo existen en los de tasa fija; tir solo en los CER.
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS bonds (
+            ticker TEXT PRIMARY KEY,
+            tipo TEXT NOT NULL,
+            precio REAL NOT NULL,
+            tna REAL,
+            tea REAL,
+            tir REAL,
+            fecha_vencimiento DATE NOT NULL
+        )
+    """)
 
     create_auth_tables(cursor)
 

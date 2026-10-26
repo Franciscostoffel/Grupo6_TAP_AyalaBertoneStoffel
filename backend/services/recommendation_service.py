@@ -1,4 +1,8 @@
-"""Arma el texto de recomendación: con Gemini si está disponible, o uno propio si falla."""
+"""Arma el resumen informativo: con Gemini si está disponible, o uno propio si falla.
+
+Es solo una descripción de los resultados calculados. No debe aconsejar
+ni recomendar invertir: eso es asesoramiento financiero y está regulado.
+"""
 
 import asyncio
 import json
@@ -13,8 +17,8 @@ from backend.core.config import (
 from backend.schemas.investment import EntityResult
 
 RECOMENDACION_NO_CONFIGURADA = (
-    "La recomendación de IA no está configurada. "
-    "La opción principal se calculó con los datos disponibles."
+    "El resumen con IA no está configurado. "
+    "Los resultados se calcularon con los datos disponibles."
 )
 
 
@@ -24,7 +28,7 @@ async def get_recommendation(
     riesgo: str,
     opciones: list[EntityResult],
 ) -> str:
-    """Pide la recomendación a Gemini y espera como máximo 5 segundos.
+    """Pide el resumen a Gemini y espera como máximo 5 segundos.
 
     asyncio.to_thread ejecuta la consulta en otro hilo para que el servidor
     pueda seguir atendiendo a otros usuarios mientras espera a Gemini.
@@ -36,7 +40,7 @@ async def get_recommendation(
             timeout=RECOMMENDATION_TIMEOUT_SECONDS,
         )
     except asyncio.TimeoutError:
-        print("[GEMINI TIMEOUT] Se usa la recomendación local.")
+        print("[GEMINI TIMEOUT] Se usa el resumen local.")
         return generar_recomendacion_local(opciones, plazo)
 
 
@@ -46,7 +50,7 @@ def generar_recomendacion_gemini(
     riesgo: str,
     opciones: list[EntityResult],
 ) -> str:
-    """Le pide a Gemini un texto breve que explique la mejor opción."""
+    """Le pide a Gemini un texto breve que describa la opción de mayor ganancia."""
     api_key = os.getenv("GEMINI_API_KEY", "").strip()
     if not api_key:
         return RECOMENDACION_NO_CONFIGURADA
@@ -72,7 +76,7 @@ def generar_recomendacion_gemini(
 
 
 def generar_recomendacion_local(opciones: list[EntityResult], plazo: int) -> str:
-    """Recomendación armada por nosotros cuando Gemini falla o tarda demasiado."""
+    """Resumen armado por nosotros cuando Gemini falla o tarda demasiado."""
     mejor = opciones[0]  # las opciones ya vienen ordenadas de mayor a menor ganancia
     banco = mejor.banco or "no informado por la fuente"
 
@@ -82,10 +86,12 @@ def generar_recomendacion_local(opciones: list[EntityResult], plazo: int) -> str
         tna = ""
 
     return (
-        f"La opción destacada es {mejor.nombre}, banco asociado: {banco}{tna}. "
+        f"Según los datos, la opción con mayor ganancia estimada es {mejor.nombre}, "
+        f"banco asociado: {banco}{tna}. "
         f"Ganancia estimada: ${formato_argentino(mejor.rendimiento)}; "
         f"monto final: ${formato_argentino(mejor.monto_final)}; {mejor.liquidez}. "
-        "Es una simulación orientativa y el rendimiento no está garantizado."
+        "Es una simulación informativa, no una recomendación de inversión, "
+        "y el rendimiento no está garantizado."
     )
 
 
@@ -115,24 +121,28 @@ def armar_prompt(capital: float, plazo: int, riesgo: str, opciones: list[EntityR
         opciones_para_prompt.append(opcion.model_dump())
 
     return f"""
-Actúa como un asesor financiero claro y prudente para una aplicación argentina.
+Actúa como un asistente que describe datos en una aplicación argentina.
+NO eres asesor financiero: no recomiendes, no aconsejes ni sugieras invertir
+en nada, y no uses palabras como "recomiendo", "te conviene", "deberías" o
+"la mejor opción para vos". Solo describe los resultados de forma neutral.
 El usuario quiere invertir ${capital:,.2f} ARS durante {plazo} días y acepta un
 nivel de riesgo '{riesgo}'.
 
 Estas son las opciones ya filtradas y calculadas por el sistema:
 {json.dumps(opciones_para_prompt, ensure_ascii=False, indent=2)}
 
-Redacta una recomendación muy breve, clara y agradable para el usuario.
+Redacta un resumen informativo muy breve y claro de la opción con mayor
+ganancia estimada (la primera de la lista).
 Responde únicamente en texto plano, sin Markdown, títulos, viñetas, símbolos
 como # o **, saludos ni explicaciones largas. Usa como máximo 3 oraciones y
 70 palabras. Escribe todos los números usando dígitos, nunca con palabras:
 por ejemplo, "$100.000", "30 días", "41,81%" y "$102.953,70". Usa siempre
 "$" para importes, "%" para porcentajes y dígitos para los días. Indica
-siempre el nombre de la opción elegida y escribe "Banco asociado: no informado
+siempre el nombre de esa opción y escribe "Banco asociado: no informado
 por la fuente" si el campo banco está vacío. Incluye también el banco asociado
 cuando esté disponible, la ganancia estimada, el monto final y su liquidez;
 menciona la TNA solo como referencia si está disponible. Usa exclusivamente
 los datos recibidos, no inventes información ni asegures rendimientos.
-Termina con una sola frase breve indicando que es una simulación orientativa
-y que los rendimientos no están garantizados.
+Termina con una sola frase breve indicando que es una simulación informativa,
+no una recomendación de inversión, y que los rendimientos no están garantizados.
 """

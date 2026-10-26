@@ -70,16 +70,26 @@ FIXED_DEPOSIT_API_URL = (
     "https://api.argentinadatos.com/v1/finanzas/tasas/plazoFijo/"
 )
 FUNDS_API_URL = "https://compararfondos.com.ar/api/fondos"
+# Letras y bonos del Tesoro que cotizan en BYMA, publicados por ArgentinaDatos.
+BILLS_API_URL = "https://api.argentinadatos.com/v1/finanzas/letras"
+CER_BONDS_API_URL = "https://api.argentinadatos.com/v1/finanzas/bonos-cer"
 
 EXTERNAL_HTTP_TIMEOUT_SECONDS = 15.0
 
 # Claves con las que se registra cada sincronización en la tabla source_cache.
 SOURCE_FIXED_DEPOSITS = "plazos_fijos"
 SOURCE_FUNDS = "fci"
+SOURCE_BONDS = "bonos"
 
 FIXED_DEPOSIT_SOURCE_NAME = "ArgentinaDatos"
 FUND_SOURCE_NAME = "CompararFondos / CAFCI"
 FIXED_DEPOSIT_TYPE = "Plazo Fijo"
+
+# Tipos de bono que se guardan en la tabla bonds.
+BOND_TYPE_FIXED_RATE = "tasa_fija"   # LECAP y BONCAP: tasa fija en pesos
+BOND_TYPE_CER = "cer"                # ajustan por inflación (CER)
+# Los bonos a tasa fija se muestran si vencen dentro de este plazo (1 año).
+BOND_MAX_DAYS = 365
 
 
 # ============================================================================

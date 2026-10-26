@@ -40,3 +40,48 @@
     color: var(--text-3);
     text-align: center;
 }
+
+/* Aviso legal destacado: se usa junto al resumen de IA y en los bonos. */
+.disclaimer {
+    display: flex;
+    gap: 16px;
+    margin-top: 20px;
+    padding: 20px 24px;
+    border: 2px solid var(--warning-border);
+    border-radius: var(--radius-lg);
+    background: var(--warning-bg);
+}
+
+.disclaimer-icon svg {
+    width: 30px;
+    height: 30px;
+    color: var(--warning-text);
+}
+
+.disclaimer h3 {
+    margin-bottom: 6px;
+    color: var(--warning-text);
+    font-size: 18px;
+}
+
+.disclaimer p {
+    color: var(--text);
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+@media (max-width: 680px) {
+    .disclaimer {
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .disclaimer-icon svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .disclaimer h3 {
+        font-size: 16px;
+    }
+}
