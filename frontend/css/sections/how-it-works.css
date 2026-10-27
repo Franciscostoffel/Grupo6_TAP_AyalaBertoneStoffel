@@ -6,6 +6,19 @@
     margin-top: 80px;
 }
 
+.how.section-highlight {
+    animation: section-highlight 1.8s ease both;
+}
+
+@keyframes section-highlight {
+    0%, 100% {
+        filter: none;
+    }
+    20%, 70% {
+        filter: drop-shadow(0 0 14px color-mix(in srgb, var(--primary) 55%, transparent));
+    }
+}
+
 .how h2 {
     font-size: 28px;
     letter-spacing: -0.02em;

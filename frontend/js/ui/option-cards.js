@@ -6,14 +6,16 @@
 import { RISK_LEVELS } from "../config.js";
 import { capitalize, formatNumber } from "../utils/format.js";
 import { escapeHtml } from "../utils/html.js";
+import { investmentKey, state } from "../state.js";
 
 // Tarjeta del plazo fijo de un banco para el plazo que eligió el usuario.
 // La tasa, la ganancia y el monto final ya vienen calculados por el backend.
-export function fixedDepositCard(opcion, plazo, capital) {
+export function fixedDepositCard(opcion, plazo, capital, optionIndex) {
     return `
         <article class="option-card featured">
             <div class="tags">
                 <span class="tag tag-safe">Tasa fija</span>
+                ${favoriteButton(opcion, capital, plazo, optionIndex)}
             </div>
             <h4>Plazo fijo a ${plazo} días</h4>
             <p class="option-type">${escapeHtml(opcion.horizonte)}</p>
@@ -52,7 +54,7 @@ export function publishedRatesList(rangos) {
 }
 
 // Tarjeta de un fondo común de inversión. Los cálculos ya vienen del backend.
-export function fundCard(fondo, plazo) {
+export function fundCard(fondo, plazo, optionIndex) {
     // La etiqueta de riesgo toma el color verde, naranja o rojo según el nivel.
     let claseRiesgo = "";
     if (RISK_LEVELS.includes(fondo.perfil_riesgo)) {
@@ -65,6 +67,7 @@ export function fundCard(fondo, plazo) {
         <article class="option-card">
             <div class="tags">
                 <span class="tag ${claseRiesgo}">Riesgo ${escapeHtml(fondo.perfil_riesgo)}</span>
+                ${favoriteButton(fondo, state.capital, plazo, optionIndex)}
             </div>
             <h4>Fondo de inversión</h4>
             <p class="option-type">${escapeHtml(fondo.tipo)}</p>
@@ -87,6 +90,14 @@ export function fundCard(fondo, plazo) {
             <small class="option-note">No está garantizado y puede variar. Fuente: ${escapeHtml(fondo.fuente)}.</small>
         </article>
     `;
+}
+
+function favoriteButton(option, capital, plazo, optionIndex) {
+    const key = investmentKey(option, capital, plazo);
+    const active = state.favoriteInvestments.some((favorite) => favorite.investment_key === key);
+    return `<button type="button" class="favorite-investment" data-option-index="${optionIndex}"
+        aria-label="${active ? "Quitar inversión de favoritos" : "Guardar inversión en favoritos"}"
+        aria-pressed="${active}">${active ? "★" : "☆"}</button>`;
 }
 
 // Una fila "etiqueta ... valor". Con enDosLineas=true el valor va debajo

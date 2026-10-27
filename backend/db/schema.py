@@ -111,6 +111,31 @@ def create_auth_tables(cursor):
             CHECK (expires_at > created_at)
         )
     """)
+    agregar_columnas_faltantes(cursor, "users", [
+        ("banco_principal", "TEXT"),
+    ])
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_favorite_banks (
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            bank_name TEXT NOT NULL,
+            PRIMARY KEY (user_id, bank_name)
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS user_favorite_investments (
+            id UUID PRIMARY KEY,
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            investment_key TEXT NOT NULL,
+            capital REAL NOT NULL,
+            plazo INTEGER NOT NULL,
+            riesgo TEXT NOT NULL,
+            option_data JSONB NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (user_id, investment_key)
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS user_favorite_investments_user_id_idx ON user_favorite_investments (user_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS user_favorite_banks_user_id_idx ON user_favorite_banks (user_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS user_sessions_user_id_idx ON user_sessions (user_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS user_sessions_expires_at_idx ON user_sessions (expires_at)")
     # El dueño de las tablas (conexión del backend) conserva acceso. Sin políticas
