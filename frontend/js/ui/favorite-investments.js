@@ -3,6 +3,7 @@ import { setFavoriteInvestments, state } from "../state.js";
 import { renderBankPanel } from "./bank-panel.js";
 import { capitalize, formatNumber } from "../utils/format.js";
 import { escapeHtml } from "../utils/html.js";
+import { term, withTerms } from "./glossary.js";
 
 const dashboardList = document.getElementById("favorite-investments-dashboard-list");
 const bankList = document.getElementById("favorite-banks-list");
@@ -61,7 +62,7 @@ function favoriteCard(favorite) {
             <dl class="favorite-investment-context">
                 <div><dt>Capital simulado</dt><dd>$${formatNumber(favorite.capital)}</dd></div>
                 <div><dt>Plazo</dt><dd>${favorite.plazo} días</dd></div>
-                <div><dt>Liquidez al guardar</dt><dd>${escapeHtml(option.liquidez)}</dd></div>
+                <div><dt>Liquidez al guardar</dt><dd>${withTerms(option.liquidez)}</dd></div>
             </dl>
             <div class="favorite-comparison">
                 <section class="favorite-value-panel" aria-label="Valores guardados">
@@ -91,7 +92,7 @@ function investmentMetrics(option) {
         <p class="favorite-gain-label">Rendimiento estimado</p>
         <strong class="favorite-gain${option.rendimiento < 0 ? " is-negative" : ""}">${sign}$${formatNumber(Math.abs(option.rendimiento))}</strong>
         <dl class="favorite-metrics">
-            <div><dt>TNA</dt><dd>${option.tna === null ? "No disponible" : `${formatNumber(option.tna)}%`}</dd></div>
+            <div><dt>${term("tna", "TNA")}</dt><dd>${option.tna === null ? "No disponible" : `${formatNumber(option.tna)}%`}</dd></div>
             <div><dt>Monto final</dt><dd>$${formatNumber(option.monto_final)}</dd></div>
         </dl>
     `;

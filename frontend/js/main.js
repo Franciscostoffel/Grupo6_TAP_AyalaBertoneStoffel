@@ -14,6 +14,7 @@ import { initForm, setFormLoading, showFormError } from "./ui/form.js";
 import { hideLoading, showLoading, showResults } from "./ui/results.js";
 import { initThemeToggle } from "./ui/theme.js";
 import { initInfoTooltip } from "./ui/tooltip.js";
+import { initGlossary } from "./ui/glossary.js";
 import { getFavoriteInvestments } from "./services/auth.js";
 import { renderFavoriteInvestments } from "./ui/favorite-investments.js";
 import { setFavoriteInvestments } from "./state.js";
@@ -27,6 +28,7 @@ const bondsView = document.getElementById("bonos");
 
 initThemeToggle();
 initInfoTooltip();
+initGlossary();
 document.addEventListener("favorite-investments-changed", renderFavoriteInvestments);
 document.addEventListener("bank-preferences-changed", renderFavoriteInvestments);
 document.addEventListener("investment-section-changed", refreshBankTabs);

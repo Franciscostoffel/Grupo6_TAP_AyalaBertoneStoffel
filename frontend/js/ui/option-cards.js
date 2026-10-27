@@ -6,6 +6,7 @@
 import { RISK_LEVELS } from "../config.js";
 import { capitalize, formatNumber } from "../utils/format.js";
 import { escapeHtml } from "../utils/html.js";
+import { term, withTerms } from "./glossary.js";
 import { investmentKey, state } from "../state.js";
 
 // Tarjeta del plazo fijo de un banco para el plazo que eligió el usuario.
@@ -27,7 +28,7 @@ export function fixedDepositCard(opcion, plazo, capital, optionIndex) {
                 Recibirías aproximadamente <strong>$${formatNumber(opcion.monto_final)}</strong>
             </p>
             <ul class="option-details">
-                ${detailRow("Tasa nominal anual (TNA)", `${formatNumber(opcion.tna)}%`)}
+                ${detailRow(`Tasa nominal anual (${term("tna", "TNA")})`, `${formatNumber(opcion.tna)}%`)}
                 ${detailRow("Disponibilidad", escapeHtml(opcion.liquidez))}
             </ul>
         </article>
@@ -82,9 +83,9 @@ export function fundCard(fondo, plazo, optionIndex) {
             </p>
             <ul class="option-details">
                 ${detailRow("Perfil de riesgo", escapeHtml(capitalize(fondo.perfil_riesgo)))}
-                ${detailRow("TNA estimada", percentOrText(fondo.tna, "No disponible"))}
+                ${detailRow(`${term("tna", "TNA")} estimada`, percentOrText(fondo.tna, "No disponible"))}
                 ${detailRow("Rendimiento último día", percentOrText(fondo.rendimiento_ultimo_dia_pct, "No informado"))}
-                ${detailRow("Liquidez", escapeHtml(fondo.liquidez))}
+                ${detailRow("Liquidez", withTerms(fondo.liquidez))}
                 ${detailRow("Acceso por app", escapeHtml(accesoApp), true)}
             </ul>
             <small class="option-note">No está garantizado y puede variar. Fuente: ${escapeHtml(fondo.fuente)}.</small>

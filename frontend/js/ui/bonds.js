@@ -7,6 +7,7 @@
 import { BOND_SECTIONS } from "../config.js";
 import { formatNumber } from "../utils/format.js";
 import { escapeHtml } from "../utils/html.js";
+import { term } from "./glossary.js";
 
 const panel = document.getElementById("bonds-panel");
 
@@ -102,7 +103,7 @@ function fixedRateTable() {
             al vencimiento, como un plazo fijo. El rendimiento supone comprarlas hoy
             al precio de mercado y esperar al vencimiento, sin comisiones.${nota}
         </p>
-        ${table(["Bono", "Vence", "Días", "Precio", "TNA", "TEA", "Rinde al vencer", conCapital ? "Ganancia" : null], filas)}
+        ${table(["Bono", "Vence", "Días", "Precio", term("tna", "TNA"), term("tea", "TEA"), term("vencimiento", "Rinde al vencer"), conCapital ? "Ganancia" : null], filas)}
     `;
 }
 
