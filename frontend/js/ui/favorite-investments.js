@@ -28,13 +28,13 @@ function renderBankList() {
         return;
     }
     const primary = state.primaryBank
-        ? `<span class="favorite-bank-pill primary">Mi banco: ${escapeHtml(state.primaryBank)}</span>`
+        ? `<div class="favorite-bank-group"><p class="favorite-bank-label">Mi banco</p><span class="favorite-bank-pill primary">${escapeHtml(state.primaryBank)}</span></div>`
         : "";
     const favorites = banks
         .filter((bank) => bank !== state.primaryBank)
         .map((bank) => `<span class="favorite-bank-pill">★ ${escapeHtml(bank)}</span>`)
         .join("");
-    bankList.innerHTML = `<div class="favorite-bank-pills">${primary}${favorites}</div>`;
+    bankList.innerHTML = `<div class="favorite-bank-groups">${primary}${favorites ? `<div class="favorite-bank-group"><p class="favorite-bank-label">Bancos favoritos</p><div class="favorite-bank-pills">${favorites}</div></div>` : ""}</div>`;
 }
 
 function favoriteCard(favorite) {
@@ -46,33 +46,54 @@ function favoriteCard(favorite) {
             ? "Ya no está disponible"
             : "Datos vigentes";
     const currentDetails = current
-        ? `<div class="favorite-current-details">
-                <strong>Actual: +$${formatNumber(current.rendimiento)}</strong>
-                <span>TNA ${current.tna === null ? "No disponible" : `${formatNumber(current.tna)}%`} · Monto final $${formatNumber(current.monto_final)}</span>
-           </div>`
+        ? investmentMetrics(current)
         : `<p class="favorite-unavailable">No encontramos una versión actual de esta inversión.</p>`;
     return `
         <article class="favorite-investment-card">
-            <div>
-                <p class="favorite-investment-bank">${escapeHtml(option.banco || "Entidad no informada")}</p>
-                <h3>${escapeHtml(option.nombre)}</h3>
-                <p class="muted">${escapeHtml(option.tipo)} · Riesgo ${escapeHtml(capitalize(option.perfil_riesgo))}</p>
-                <small class="favorite-saved-details">Guardada con TNA ${option.tna === null ? "no disponible" : `${formatNumber(option.tna)}%`} · Monto final $${formatNumber(option.monto_final)} · ${escapeHtml(option.liquidez)}</small>
+            <header class="favorite-card-header">
+                <div class="favorite-card-identity">
+                    <p class="favorite-investment-bank">${escapeHtml(option.banco || "Entidad no informada")}</p>
+                    <h4>${escapeHtml(option.nombre)}</h4>
+                    <p class="favorite-investment-type"><span>${escapeHtml(option.tipo)}</span><span class="favorite-risk">Riesgo ${escapeHtml(capitalize(option.perfil_riesgo))}</span></p>
+                </div>
+                <span class="favorite-status ${escapeHtml(favorite.current_status)}">${statusText}</span>
+            </header>
+            <dl class="favorite-investment-context">
+                <div><dt>Capital simulado</dt><dd>$${formatNumber(favorite.capital)}</dd></div>
+                <div><dt>Plazo</dt><dd>${favorite.plazo} días</dd></div>
+                <div><dt>Liquidez al guardar</dt><dd>${escapeHtml(option.liquidez)}</dd></div>
+            </dl>
+            <div class="favorite-comparison">
+                <section class="favorite-value-panel" aria-label="Valores guardados">
+                    <h5>Al guardar</h5>
+                    ${investmentMetrics(option)}
+                </section>
+                <section class="favorite-value-panel favorite-value-panel-current" aria-label="Valores actuales">
+                    <h5>Con datos actuales</h5>
+                    ${currentDetails}
+                </section>
             </div>
-            <div class="favorite-investment-result">
-                <span class="favorite-status ${favorite.current_status}">${statusText}</span>
-                <strong>Guardado: +$${formatNumber(option.rendimiento)}</strong>
-                <span>${favorite.plazo} días · Capital $${formatNumber(favorite.capital)}</span>
-            </div>
-            <div class="favorite-investment-current">
-                ${currentDetails}
-                ${favorite.current_updated_at ? `<small>Fuente actualizada: ${escapeHtml(String(favorite.current_updated_at))}</small>` : ""}
-            </div>
-            <button type="button" class="btn btn-ghost remove-favorite-investment"
-                    data-investment-key="${escapeHtml(favorite.investment_key)}">
-                Quitar
-            </button>
+            <footer class="favorite-card-footer">
+                <small>${favorite.current_updated_at ? `Fuente actualizada: ${escapeHtml(String(favorite.current_updated_at))}` : "Sin fecha de actualización disponible"}</small>
+                <button type="button" class="btn btn-ghost remove-favorite-investment"
+                        aria-label="Quitar ${escapeHtml(option.nombre)} de favoritos"
+                        data-investment-key="${escapeHtml(favorite.investment_key)}">
+                    Quitar de favoritos
+                </button>
+            </footer>
         </article>
+    `;
+}
+
+function investmentMetrics(option) {
+    const sign = option.rendimiento < 0 ? "−" : "+";
+    return `
+        <p class="favorite-gain-label">Rendimiento estimado</p>
+        <strong class="favorite-gain${option.rendimiento < 0 ? " is-negative" : ""}">${sign}$${formatNumber(Math.abs(option.rendimiento))}</strong>
+        <dl class="favorite-metrics">
+            <div><dt>TNA</dt><dd>${option.tna === null ? "No disponible" : `${formatNumber(option.tna)}%`}</dd></div>
+            <div><dt>Monto final</dt><dd>$${formatNumber(option.monto_final)}</dd></div>
+        </dl>
     `;
 }
 

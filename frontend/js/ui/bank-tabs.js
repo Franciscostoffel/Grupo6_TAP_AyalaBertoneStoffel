@@ -3,8 +3,9 @@
 // Se crean a partir de las listas BANKS y WALLETS de config.js.
 // ============================================================================
 
-import { BANKS, WALLETS } from "../config.js";
+import { BANKS, SECTIONS, WALLETS } from "../config.js";
 import { escapeHtml } from "../utils/html.js";
+import { orderEntities, sectionOptions } from "../utils/investment-order.js";
 import { getPreferences, savePreferences } from "../services/auth.js";
 import { state, setBankPreferences } from "../state.js";
 
@@ -19,24 +20,30 @@ export function initBankTabs(alElegir) {
     primaryBankSelect.insertAdjacentHTML("beforeend", BANKS.map((bank) =>
         `<option value="${escapeHtml(bank.name)}">${escapeHtml(bank.name)}</option>`
     ).join(""));
-    renderTabs(alElegir);
+    refreshBankTabs();
     tabList.addEventListener("click", toggleFavorite);
     primaryBankSelect.addEventListener("change", () => updatePreferences(primaryBankSelect.value || null));
     favoritesFilter.addEventListener("click", () => {
         state.favoriteOnly = !state.favoriteOnly;
-        renderTabs(alElegir);
-        renderPreferenceState();
+        refreshBankTabs();
     });
+}
+
+// Regenera el orden sin perder la seleccion, las estrellas ni el filtro.
+export function refreshBankTabs() {
+    renderTabs(selectBank);
     renderPreferenceState();
+    setActiveBankTab(state.selectedBank);
 }
 
 function renderTabs(alElegir) {
     let html = "";
-    orderedBanks().forEach((banco) => {
+    const visibleOptions = sectionOptions(state.options, state.selectedSection);
+    orderEntities(BANKS, visibleOptions, state.primaryBank, state.favoriteBanks).forEach((banco) => {
         html += tabButton(banco);
     });
     html += `<span id="wallets-label" class="tab-group-label">Billeteras</span>`;
-    WALLETS.forEach((billetera) => {
+    orderEntities(WALLETS, sectionOptions(state.options, SECTIONS.FUNDS)).forEach((billetera) => {
         html += tabButton(billetera);
     });
     tabList.innerHTML = html;
@@ -60,15 +67,6 @@ function renderTabs(alElegir) {
         });
     });
     applyFavoriteFilter();
-}
-
-function orderedBanks() {
-    if (!state.primaryBank) return BANKS;
-    return BANKS.slice().sort((first, second) => {
-        if (first.name === state.primaryBank) return -1;
-        if (second.name === state.primaryBank) return 1;
-        return 0;
-    });
 }
 
 function tabButton(entidad) {
@@ -112,7 +110,7 @@ async function updatePreferences(primaryBank, favoriteBanks = state.favoriteBank
         });
         setBankPreferences(preferences);
         document.dispatchEvent(new CustomEvent("bank-preferences-changed"));
-        renderTabs(selectBank);
+        refreshBankTabs();
         if (primaryBank) {
             setActiveBankTab(primaryBank);
             selectBank(primaryBank);
@@ -136,8 +134,7 @@ export async function loadBankPreferences() {
         const preferences = await getPreferences();
         setBankPreferences(preferences);
         document.dispatchEvent(new CustomEvent("bank-preferences-changed"));
-        renderTabs(selectBank);
-        renderPreferenceState();
+        refreshBankTabs();
         if (state.primaryBank) {
             setActiveBankTab(state.primaryBank);
             selectBank(state.primaryBank);

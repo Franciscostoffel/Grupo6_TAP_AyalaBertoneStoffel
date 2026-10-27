@@ -3,11 +3,12 @@
 // Muestra el nombre, los botones "Plazo fijo / Fondos" y las tarjetas.
 // ============================================================================
 
-import { BANKS, FIXED_DEPOSIT_TYPE, SECTIONS, WALLETS } from "../config.js";
+import { BANKS, SECTIONS, WALLETS } from "../config.js";
 import { state } from "../state.js";
 import { investmentKey } from "../state.js";
 import { saveFavoriteInvestment, deleteFavoriteInvestment } from "../services/auth.js";
 import { escapeHtml } from "../utils/html.js";
+import { orderOptions, sectionOptions } from "../utils/investment-order.js";
 import { externalLinkIcon } from "./icons.js";
 import { fixedDepositCard, fundCard, publishedRatesList } from "./option-cards.js";
 
@@ -26,6 +27,7 @@ panel.addEventListener("click", (event) => {
         return;
     }
     state.selectedSection = boton.dataset.section;
+    document.dispatchEvent(new CustomEvent("investment-section-changed"));
     renderBankPanel();
 });
 
@@ -66,18 +68,14 @@ export function renderBankPanel() {
     const esBilletera = isWallet(entidad);
 
     // Opción de plazo fijo ya calculada por el backend para el plazo del usuario.
-    let opcionPlazoFijo = null;
-    for (const opcion of state.options) {
-        if (opcion.banco === entidad && opcion.tipo === FIXED_DEPOSIT_TYPE) {
-            opcionPlazoFijo = opcion;
-        }
-    }
+    const opcionesEntidad = state.options.filter((opcion) => opcion.banco === entidad);
+    const opcionPlazoFijo = orderOptions(sectionOptions(opcionesEntidad, SECTIONS.FIXED_TERM))[0] || null;
 
     // Tasas que publica el banco para cada plazo (solo informativas).
     const tasasPublicadas = state.fixedTerms.filter((rango) => rango.banco === entidad);
 
     // Fondos de la entidad que cumplen con el riesgo elegido (los fondos nunca están garantizados).
-    const fondos = state.options.filter((opcion) => opcion.banco === entidad && !opcion.garantizado);
+    const fondos = orderOptions(sectionOptions(opcionesEntidad, SECTIONS.FUNDS));
 
     let contenido;
     if (esBilletera) {

@@ -7,7 +7,7 @@
 import { analyzeInvestment } from "./services/api.js";
 import { clearSessionState, setAnalysis, state } from "./state.js";
 import { initAuth, showSignedOut } from "./ui/auth.js";
-import { initBankTabs, loadBankPreferences, setActiveBankTab } from "./ui/bank-tabs.js";
+import { initBankTabs, loadBankPreferences, refreshBankTabs } from "./ui/bank-tabs.js";
 import { renderBankPanel } from "./ui/bank-panel.js";
 import { initForm, setFormLoading, showFormError } from "./ui/form.js";
 import { hideLoading, showLoading, showResults } from "./ui/results.js";
@@ -27,6 +27,7 @@ initThemeToggle();
 initInfoTooltip();
 document.addEventListener("favorite-investments-changed", renderFavoriteInvestments);
 document.addEventListener("bank-preferences-changed", renderFavoriteInvestments);
+document.addEventListener("investment-section-changed", refreshBankTabs);
 document.querySelectorAll("[data-app-view]").forEach((link) => {
     link.addEventListener("click", (event) => {
         event.preventDefault();
@@ -111,7 +112,7 @@ async function analizar(datos) {
         if (requestVersion !== sessionVersion) return;
 
         setAnalysis(resultado);
-        setActiveBankTab(state.selectedBank);
+        refreshBankTabs();
         renderBankPanel();
         showResults(resultado);
     } catch (error) {
