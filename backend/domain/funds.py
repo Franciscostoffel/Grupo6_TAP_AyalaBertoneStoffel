@@ -15,7 +15,7 @@ def select_one_class_per_fund(fondos: list[dict]) -> list[dict]:
     for fondo in fondos:
         nombre = str(fondo.get("nombre") or "").strip()
         nombre_base = str(fondo.get("nombreBase") or nombre).strip()
-        if not nombre or fondo.get("r30") is None:
+        if not nombre or fondo.get("r30") is None or fondo.get("serieRota30"):
             continue
 
         if nombre_base not in elegidos:

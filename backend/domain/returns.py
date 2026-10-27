@@ -8,14 +8,14 @@ def normalize_percentage(valor: float) -> float:
     return valor
 
 
-def annualized_return_from_30d(rendimiento_30d: float | None) -> float | None:
-    """Estima una TNA repitiendo 12 veces el rendimiento de los últimos 30 días.
+def nominal_annual_rate_from_30d(rendimiento_30d: float | None) -> float | None:
+    """Estima una TNA con el rendimiento de los últimos 30 días.
 
-    Ejemplo: 2% mensual -> (1,02 ^ 12 - 1) x 100 = 26,8% anual.
+    Ejemplo: 2% mensual -> 2 x 365 / 30 = 24,3% anual.
     """
     if rendimiento_30d is None or rendimiento_30d <= -100:
         return None
-    return ((1 + rendimiento_30d / 100) ** 12 - 1) * 100
+    return rendimiento_30d * 365 / 30
 
 
 def fund_period_return_pct(rendimiento_30d: float, plazo: int) -> float:

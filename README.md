@@ -173,7 +173,7 @@ El archivo `.env` está en `.gitignore`, así que cada integrante usa su propia
 clave y nunca se sube a GitHub. En Render, la clave se carga en el panel del
 servicio, en **Environment**, con el nombre `GEMINI_API_KEY`.
 
-El modelo predeterminado es `gemini-3.5-flash-lite`, porque esta aplicación
+El modelo predeterminado es `gemini-2.5-flash-lite`, porque esta aplicación
 solo necesita redactar un resumen breve. Si no se configura la clave,
 la aplicación continúa funcionando con un resumen local.
 

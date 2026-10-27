@@ -106,10 +106,10 @@ SYNC_INTERVAL_HOURS = 1
 # ============================================================================
 
 GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
-GEMINI_DEFAULT_MODEL = "gemini-3.5-flash-lite"
+GEMINI_DEFAULT_MODEL = "gemini-2.5-flash-lite"
 GEMINI_HTTP_TIMEOUT_SECONDS = 4.5
 RECOMMENDATION_TIMEOUT_SECONDS = 5
-GEMINI_MAX_OPTIONS_IN_PROMPT = 10
+GEMINI_MAX_OUTPUT_TOKENS = 300
 
 
 # ============================================================================

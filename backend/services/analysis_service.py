@@ -18,7 +18,10 @@ from backend.domain.returns import (
 from backend.domain.risk import FIXED_DEPOSIT_RISK, fund_risk, is_valid_risk, risk_matches
 from backend.schemas.investment import EntityResult, InvestmentRequest, InvestmentResponse
 from backend.services.exceptions import DataNotReadyError, InvalidRiskError, NoOptionsError
-from backend.services.recommendation_service import get_recommendation
+from backend.services.recommendation_service import (
+    RECOMENDACION_SIN_BANCOS,
+    get_recommendation,
+)
 
 TEXTO_ACCESO_APP = (
     "Fondo de esta entidad; confirmá en su app si está habilitado "
@@ -60,7 +63,18 @@ async def analyze_investment(pedido: InvestmentRequest) -> InvestmentResponse:
 
     # 4. Ordenar de mayor a menor ganancia y pedir la recomendación.
     opciones.sort(key=obtener_ganancia, reverse=True)
-    recomendacion = await get_recommendation(pedido.capital, pedido.plazo, riesgo, opciones)
+
+    opciones_con_banco = []
+    for opcion in opciones:
+        if opcion.banco:
+            opciones_con_banco.append(opcion)
+
+    if opciones_con_banco:
+        recomendacion = await get_recommendation(
+            pedido.capital, pedido.plazo, riesgo, opciones_con_banco
+        )
+    else:
+        recomendacion = RECOMENDACION_SIN_BANCOS
 
     return InvestmentResponse(
         capital=pedido.capital,

@@ -7,7 +7,7 @@ from backend.core.config import SOURCE_FUNDS
 from backend.db.repositories import fund_repository, source_cache_repository
 from backend.domain.banks import bank_for_fund
 from backend.domain.funds import select_one_class_per_fund
-from backend.domain.returns import annualized_return_from_30d
+from backend.domain.returns import nominal_annual_rate_from_30d
 
 
 async def sync_funds(client: httpx.AsyncClient):
@@ -33,7 +33,7 @@ def normalize_fund(fondo: dict) -> dict:
     if fondo.get("tna") is not None and float(fondo["tna"]) > 0:
         tna_estimada = float(fondo["tna"])
     else:
-        tna_estimada = annualized_return_from_30d(rendimiento_30d)
+        tna_estimada = nominal_annual_rate_from_30d(rendimiento_30d)
 
     if fondo.get("variacionDia") is not None:
         rendimiento_1d = float(fondo["variacionDia"])

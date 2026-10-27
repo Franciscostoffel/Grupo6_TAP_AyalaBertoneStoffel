@@ -2,7 +2,11 @@
 
 import httpx
 
-from backend.core.config import GEMINI_API_BASE_URL, GEMINI_HTTP_TIMEOUT_SECONDS
+from backend.core.config import (
+    GEMINI_API_BASE_URL,
+    GEMINI_HTTP_TIMEOUT_SECONDS,
+    GEMINI_MAX_OUTPUT_TOKENS,
+)
 
 
 def generate_content(api_key: str, model: str, prompt: str) -> dict:
@@ -10,7 +14,10 @@ def generate_content(api_key: str, model: str, prompt: str) -> dict:
     respuesta = httpx.post(
         f"{GEMINI_API_BASE_URL}/{model}:generateContent",
         headers={"x-goog-api-key": api_key},
-        json={"contents": [{"parts": [{"text": prompt}]}]},
+        json={
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"maxOutputTokens": GEMINI_MAX_OUTPUT_TOKENS},
+        },
         timeout=GEMINI_HTTP_TIMEOUT_SECONDS,
     )
     if respuesta.is_error:
