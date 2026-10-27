@@ -3,9 +3,12 @@
 // Muestra el nombre, los botones "Plazo fijo / Fondos" y las tarjetas.
 // ============================================================================
 
-import { BANKS, FIXED_DEPOSIT_TYPE, SECTIONS, WALLETS } from "../config.js";
+import { BANKS, SECTIONS, WALLETS } from "../config.js";
 import { state } from "../state.js";
+import { investmentKey } from "../state.js";
+import { saveFavoriteInvestment, deleteFavoriteInvestment } from "../services/auth.js";
 import { escapeHtml } from "../utils/html.js";
+import { orderOptions, sectionOptions } from "../utils/investment-order.js";
 import { externalLinkIcon } from "./icons.js";
 import { fixedDepositCard, fundCard, publishedRatesList } from "./option-cards.js";
 
@@ -14,13 +17,50 @@ const panel = document.getElementById("bank-panel");
 // Los botones "Plazo fijo" y "Fondos" se vuelven a crear cada vez que se dibuja
 // el panel, por eso escuchamos los clics en el panel y vemos qué botón fue.
 panel.addEventListener("click", (event) => {
+    const favoriteButton = event.target.closest(".favorite-investment");
+    if (favoriteButton) {
+        toggleFavoriteInvestment(Number(favoriteButton.dataset.optionIndex));
+        return;
+    }
     const boton = event.target.closest(".subtab");
     if (boton === null) {
         return;
     }
     state.selectedSection = boton.dataset.section;
+    document.dispatchEvent(new CustomEvent("investment-section-changed"));
     renderBankPanel();
 });
+
+async function toggleFavoriteInvestment(optionIndex) {
+    const option = state.options[optionIndex];
+    if (!option) return;
+    const key = investmentKey(option, state.capital, state.plazo);
+    const saved = state.favoriteInvestments.some((favorite) => favorite.investment_key === key);
+    try {
+        if (saved) {
+            await deleteFavoriteInvestment(key);
+            state.favoriteInvestments = state.favoriteInvestments.filter(
+                (favorite) => favorite.investment_key !== key
+            );
+        } else {
+            const favorite = await saveFavoriteInvestment({
+                investment_key: key,
+                capital: state.capital,
+                plazo: state.plazo,
+                riesgo: state.risk,
+                option,
+            });
+            state.favoriteInvestments = [
+                favorite,
+                ...state.favoriteInvestments.filter((item) => item.investment_key !== key),
+            ];
+        }
+        document.dispatchEvent(new CustomEvent("favorite-investments-changed"));
+        renderBankPanel();
+    } catch (error) {
+        window.alert(error.message);
+    }
+}
 
 // Dibuja el panel de la entidad y la sección que están guardados en state.
 export function renderBankPanel() {
@@ -28,18 +68,14 @@ export function renderBankPanel() {
     const esBilletera = isWallet(entidad);
 
     // Opción de plazo fijo ya calculada por el backend para el plazo del usuario.
-    let opcionPlazoFijo = null;
-    for (const opcion of state.options) {
-        if (opcion.banco === entidad && opcion.tipo === FIXED_DEPOSIT_TYPE) {
-            opcionPlazoFijo = opcion;
-        }
-    }
+    const opcionesEntidad = state.options.filter((opcion) => opcion.banco === entidad);
+    const opcionPlazoFijo = orderOptions(sectionOptions(opcionesEntidad, SECTIONS.FIXED_TERM))[0] || null;
 
     // Tasas que publica el banco para cada plazo (solo informativas).
     const tasasPublicadas = state.fixedTerms.filter((rango) => rango.banco === entidad);
 
     // Fondos de la entidad que cumplen con el riesgo elegido (los fondos nunca están garantizados).
-    const fondos = state.options.filter((opcion) => opcion.banco === entidad && !opcion.garantizado);
+    const fondos = orderOptions(sectionOptions(opcionesEntidad, SECTIONS.FUNDS));
 
     let contenido;
     if (esBilletera) {
@@ -139,7 +175,7 @@ function fixedDepositSection(opcion, tasasPublicadas) {
 
     let html = `
         <h5 class="bank-panel-title">Plazo fijo para tus ${state.plazo} días</h5>
-        <div class="option-grid">${fixedDepositCard(opcion, state.plazo, state.capital)}</div>
+        <div class="option-grid">${fixedDepositCard(opcion, state.plazo, state.capital, state.options.indexOf(opcion))}</div>
     `;
     if (tasasPublicadas.length > 0) {
         html += publishedRatesList(tasasPublicadas);
@@ -154,7 +190,7 @@ function fundsList(fondos) {
 
     let tarjetas = "";
     fondos.forEach((fondo) => {
-        tarjetas += fundCard(fondo, state.plazo);
+        tarjetas += fundCard(fondo, state.plazo, state.options.indexOf(fondo));
     });
 
     return `

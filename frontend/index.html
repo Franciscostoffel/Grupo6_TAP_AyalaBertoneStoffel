@@ -44,8 +44,9 @@
             </a>
 
             <nav class="nav-links auth-only hidden" aria-label="Secciones">
-                <a href="#simulador">Simular</a>
+                <a href="#simulador" data-app-view="simulator">Simular</a>
                 <a href="#bonos">Bonos</a>
+                <a href="#favoritos" data-app-view="favorites">Mis favoritos</a>
                 <a href="#como-funciona">Cómo funciona</a>
                 <a href="#fuentes">Fuentes</a>
             </nav>
@@ -111,6 +112,27 @@
         </section>
 
         <div id="app-content" class="hidden">
+
+        <section id="favorites-dashboard" class="favorites-dashboard card hidden" aria-labelledby="favorites-dashboard-title">
+            <div class="section-header">
+                <div>
+                    <span class="eyebrow">Tu espacio</span>
+                    <h2 id="favorites-dashboard-title">Mis favoritos</h2>
+                    <p class="muted">Consultá tus bancos e inversiones guardadas sin recalcular.</p>
+                </div>
+                <a class="btn btn-ghost" href="#simulador" data-app-view="simulator">Nueva simulación</a>
+            </div>
+            <div class="dashboard-columns">
+                <div class="favorites-block" aria-labelledby="favorite-banks-title">
+                    <h3 id="favorite-banks-title">Mis bancos</h3>
+                    <div id="favorite-banks-list"></div>
+                </div>
+                <div class="favorites-block" aria-labelledby="favorite-investments-title">
+                    <h3 id="favorite-investments-title">Inversiones guardadas</h3>
+                    <div id="favorite-investments-dashboard-list"></div>
+                </div>
+            </div>
+        </section>
 
         <!-- Encabezado, explicacion breve y formulario de datos. -->
 
@@ -382,6 +404,18 @@
 
             <h3 class="options-title">Opciones de inversión</h3>
 
+            <div class="bank-preferences">
+                <label for="primary-bank">Mi banco</label>
+                <select id="primary-bank">
+                    <option value="">Todavía no elegí un banco</option>
+                </select>
+                <span>Marcá favoritos con ☆ para tenerlos a mano.</span>
+            </div>
+
+            <button type="button" id="favorites-filter" class="favorite-filter" aria-pressed="false">
+                ★ Ver solo favoritos
+            </button>
+
             <!-- Las pestañas se generan desde la lista BANKS de js/config.js. -->
             <div
                 id="bank-tabs"
@@ -406,7 +440,6 @@
             </p>
 
         </section>
-
 
         <!-- Letras y bonos del Tesoro con precios de mercado. -->
 

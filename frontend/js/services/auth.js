@@ -1,11 +1,11 @@
 // La cookie HttpOnly la administra el navegador; JavaScript nunca lee el token.
 import { AUTH_ENDPOINT } from "../config.js";
 
-async function request(path, data) {
+async function request(path, data, method) {
     let response;
     try {
         response = await fetch(`${AUTH_ENDPOINT}/${path}`, {
-            method: data === undefined ? "GET" : "POST",
+            method: method || (data === undefined ? "GET" : "POST"),
             credentials: "same-origin",
             cache: "no-store",
             headers: { "Content-Type": "application/json", "X-Requested-With": "fetch" },
@@ -27,3 +27,10 @@ export const getCurrentUser = () => request("me");
 export const login = (data) => request("login", data);
 export const register = (data) => request("register", data);
 export const logout = () => request("logout", {});
+export const getPreferences = () => request("preferences");
+export const savePreferences = (data) => request("preferences", data, "PUT");
+export const getFavoriteInvestments = () => request("favorite-investments");
+export const saveFavoriteInvestment = (data) => request("favorite-investments", data);
+export const deleteFavoriteInvestment = (key) => request(
+    `favorite-investments/${encodeURIComponent(key)}`, undefined, "DELETE"
+);

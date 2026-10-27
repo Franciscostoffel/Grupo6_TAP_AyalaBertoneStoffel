@@ -8,7 +8,12 @@ from starlette.responses import JSONResponse
 
 from backend.api.dependencies import get_current_user, limit_auth_attempts, require_same_origin
 from backend.core.config import COOKIE_SECURE, SESSION_COOKIE_NAME, SESSION_TTL_SECONDS
-from backend.schemas.auth import LoginRequest, RegisterRequest, UserResponse
+from backend.schemas.auth import (
+    BankPreferences, FavoriteInvestmentRequest, FavoriteInvestmentResponse,
+    LoginRequest, RegisterRequest, UserResponse,
+)
+from backend.services import preferences_service
+from backend.services import favorite_investment_service
 from backend.services import auth_service
 from backend.services.exceptions import EmailAlreadyRegisteredError, InvalidCredentialsError
 
@@ -70,6 +75,36 @@ def login(data: LoginRequest, request: Request, response: Response):
 @router.get("/me", response_model=UserResponse)
 def me(user=Depends(get_current_user)):
     return user
+
+
+@router.get("/preferences", response_model=BankPreferences)
+def get_preferences(user=Depends(get_current_user)):
+    return preferences_service.get_preferences(user["id"])
+
+
+@router.put("/preferences", response_model=BankPreferences,
+            dependencies=write_dependencies)
+def save_preferences(data: BankPreferences, user=Depends(get_current_user)):
+    return preferences_service.save_preferences(
+        user["id"], data.primary_bank, data.favorite_banks
+    )
+
+
+@router.get("/favorite-investments", response_model=list[FavoriteInvestmentResponse])
+def list_favorite_investments(user=Depends(get_current_user)):
+    return favorite_investment_service.list_favorites(user["id"])
+
+
+@router.post("/favorite-investments", response_model=FavoriteInvestmentResponse, status_code=201,
+             dependencies=write_dependencies)
+def save_favorite_investment(data: FavoriteInvestmentRequest, user=Depends(get_current_user)):
+    return favorite_investment_service.save_favorite(user["id"], data)
+
+
+@router.delete("/favorite-investments/{investment_key}", status_code=204,
+               dependencies=write_dependencies)
+def delete_favorite_investment(investment_key: str, user=Depends(get_current_user)):
+    favorite_investment_service.delete_favorite(user["id"], investment_key)
 
 
 @router.post("/logout", status_code=204, dependencies=write_dependencies)
