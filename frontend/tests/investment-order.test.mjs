@@ -135,6 +135,7 @@ test("panel ordena tarjetas y el boton de favorito guarda la opcion correcta", a
         state.capital = 1000;
         state.plazo = 30;
         state.risk = "bajo";
+        state.user = { email: "test@example.com" };
         state.selectedBank = "BBVA";
         state.selectedSection = "fondos";
         state.options = [option("BBVA", 10, { ...common, nombre: "Menor" }),

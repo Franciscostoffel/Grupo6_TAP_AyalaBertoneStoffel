@@ -61,25 +61,38 @@ export function showSignedOut(message = "") {
     version += 1;
     registering = false;
     callbacks.onSignedOut();
-    app.classList.add("hidden");
-    view.classList.remove("hidden");
+    app.classList.remove("hidden");
+    view.classList.toggle("hidden", !message);
     loading.classList.add("hidden");
     form.classList.remove("hidden");
     toggle.classList.remove("hidden");
     retry.classList.add("hidden");
     document.querySelectorAll(".auth-only").forEach((element) => element.classList.add("hidden"));
     document.getElementById("user-email").textContent = "";
-    document.querySelector(".skip-link").href = "#auth-title";
+    document.querySelector(".skip-link").href = "#simulador";
     form.reset();
     setMode();
     if (message) showError(message);
 }
 
+export function requestAuthentication(message = "Iniciá sesión para guardar tus favoritos.") {
+    view.classList.remove("hidden");
+    loading.classList.add("hidden");
+    form.classList.remove("hidden");
+    toggle.classList.remove("hidden");
+    retry.classList.add("hidden");
+    document.querySelector(".skip-link").href = "#auth-title";
+    setMode();
+    showError(message);
+    view.scrollIntoView({ behavior: "smooth", block: "start" });
+    form.elements.email.focus();
+}
+
 async function restoreSession() {
     const attempt = ++version;
     clearError();
-    view.classList.remove("hidden");
-    app.classList.add("hidden");
+    view.classList.add("hidden");
+    app.classList.remove("hidden");
     document.querySelectorAll(".auth-only").forEach((element) => element.classList.add("hidden"));
     loading.classList.remove("hidden");
     form.classList.add("hidden");
@@ -94,7 +107,7 @@ async function restoreSession() {
             showSignedOut();
         } else {
             view.classList.remove("hidden");
-            app.classList.add("hidden");
+            app.classList.remove("hidden");
             document.querySelectorAll(".auth-only").forEach((element) => element.classList.add("hidden"));
             showError(error.message);
             retry.classList.remove("hidden");

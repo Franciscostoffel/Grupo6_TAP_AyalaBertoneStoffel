@@ -1,10 +1,10 @@
 """Reglas de negocio para las preferencias de bancos."""
 
-from backend.core.config import BANCOS_SELECCIONADOS
+from backend.core.config import BANCOS_SELECCIONADOS, SOCIEDADES_GERENTES
 from backend.db.connection import get_connection
 from backend.db.repositories import preferences_repository
 
-ALLOWED_BANKS = frozenset(BANCOS_SELECCIONADOS.values())
+ALLOWED_BANKS = frozenset((*BANCOS_SELECCIONADOS.values(), *SOCIEDADES_GERENTES.values()))
 
 
 def get_preferences(user_id):

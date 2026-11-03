@@ -87,9 +87,9 @@ class BondHttpTests(unittest.TestCase):
         self.user = {"id": uuid4(), "email": "person@example.com", "created_at": datetime.now(timezone.utc)}
         self.respuesta = {"capital": None, "tasa_fija": [], "cer": []}
 
-    def test_requires_session(self):
-        with patch.object(auth_service, "get_current_user", return_value=None):
-            self.assertEqual(self.client.get("/api/bonds").status_code, 401)
+    def test_is_public_without_session(self):
+        with patch.object(bonds.bond_service, "list_bonds", return_value=self.respuesta):
+            self.assertEqual(self.client.get("/api/bonds").status_code, 200)
 
     def test_passes_capital_and_validates_it(self):
         with patch.object(auth_service, "get_current_user", return_value=self.user), \

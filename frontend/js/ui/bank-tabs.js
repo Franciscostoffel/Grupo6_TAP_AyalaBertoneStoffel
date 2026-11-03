@@ -8,6 +8,7 @@ import { escapeHtml } from "../utils/html.js";
 import { orderEntities, sectionOptions } from "../utils/investment-order.js";
 import { getPreferences, savePreferences } from "../services/auth.js";
 import { state, setBankPreferences } from "../state.js";
+import { requestAuthentication } from "./auth.js";
 
 const tabList = document.getElementById("bank-tabs");
 const primaryBankSelect = document.getElementById("primary-bank");
@@ -22,8 +23,19 @@ export function initBankTabs(alElegir) {
     ).join(""));
     refreshBankTabs();
     tabList.addEventListener("click", toggleFavorite);
-    primaryBankSelect.addEventListener("change", () => updatePreferences(primaryBankSelect.value || null));
+    primaryBankSelect.addEventListener("change", () => {
+        if (!state.user) {
+            primaryBankSelect.value = state.primaryBank || "";
+            requestAuthentication("Iniciá sesión para guardar tu banco.");
+            return;
+        }
+        updatePreferences(primaryBankSelect.value || null);
+    });
     favoritesFilter.addEventListener("click", () => {
+        if (!state.user) {
+            requestAuthentication("Iniciá sesión para usar tus favoritos.");
+            return;
+        }
         state.favoriteOnly = !state.favoriteOnly;
         refreshBankTabs();
     });
@@ -76,20 +88,20 @@ function tabButton(entidad) {
                     aria-controls="bank-panel" tabindex="-1" data-bank="${escapeHtml(entidad.name)}">
                 ${escapeHtml(entidad.label)}
             </button>
-            ${isBank(entidad.name) ? `<button type="button" class="favorite-bank" aria-label="Agregar ${escapeHtml(entidad.label)} a favoritos"
-                data-favorite-bank="${escapeHtml(entidad.name)}" aria-pressed="false">☆</button>` : ""}
+            <button type="button" class="favorite-bank" aria-label="Agregar ${escapeHtml(entidad.label)} a favoritos"
+                data-favorite-bank="${escapeHtml(entidad.name)}" aria-pressed="false">☆</button>
         </span>
     `;
-}
-
-function isBank(name) {
-    return BANKS.some((bank) => bank.name === name);
 }
 
 function toggleFavorite(event) {
     const button = event.target.closest(".favorite-bank");
     if (!button) return;
     event.stopPropagation();
+    if (!state.user) {
+        requestAuthentication("Iniciá sesión para guardar bancos favoritos.");
+        return;
+    }
     const bank = button.dataset.favoriteBank;
     const favorites = state.favoriteBanks.includes(bank)
         ? state.favoriteBanks.filter((name) => name !== bank)

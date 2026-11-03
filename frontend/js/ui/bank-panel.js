@@ -6,6 +6,7 @@
 import { BANKS, SECTIONS, WALLETS } from "../config.js";
 import { state } from "../state.js";
 import { investmentKey } from "../state.js";
+import { requestAuthentication } from "./auth.js";
 import { saveFavoriteInvestment, deleteFavoriteInvestment } from "../services/auth.js";
 import { escapeHtml } from "../utils/html.js";
 import { orderOptions, sectionOptions } from "../utils/investment-order.js";
@@ -19,6 +20,10 @@ const panel = document.getElementById("bank-panel");
 panel.addEventListener("click", (event) => {
     const favoriteButton = event.target.closest(".favorite-investment");
     if (favoriteButton) {
+        if (!state.user) {
+            requestAuthentication("Iniciá sesión para guardar inversiones favoritas.");
+            return;
+        }
         toggleFavoriteInvestment(Number(favoriteButton.dataset.optionIndex));
         return;
     }

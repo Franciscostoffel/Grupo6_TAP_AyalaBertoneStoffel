@@ -6,7 +6,7 @@
 
 import { analyzeInvestment, fetchBonds } from "./services/api.js";
 import { clearSessionState, setAnalysis, state } from "./state.js";
-import { initAuth, showSignedOut } from "./ui/auth.js";
+import { initAuth, requestAuthentication, showSignedOut } from "./ui/auth.js";
 import { initBankTabs, loadBankPreferences, refreshBankTabs } from "./ui/bank-tabs.js";
 import { renderBankPanel } from "./ui/bank-panel.js";
 import { clearBonds, setBonds, showBondsMessage } from "./ui/bonds.js";
@@ -82,6 +82,10 @@ initAuth({
 
 function showAppView(view, { scroll = true } = {}) {
     const showFavorites = view === "favorites";
+    if (showFavorites && !state.user) {
+        requestAuthentication("Iniciá sesión para consultar tus favoritos.");
+        return;
+    }
     simulatorView.classList.toggle("hidden", showFavorites);
     if (showFavorites) loadingView.classList.add("hidden");
     howView.classList.toggle("hidden", showFavorites);
@@ -115,7 +119,6 @@ function alElegirBanco(nombreBanco) {
 
 // Se ejecuta al enviar el formulario con datos válidos.
 async function analizar(datos) {
-    if (!state.user) return;
     const requestVersion = sessionVersion;
     setFormLoading(true);
     showLoading();
@@ -132,10 +135,6 @@ async function analizar(datos) {
     } catch (error) {
         if (requestVersion !== sessionVersion) return;
         hideLoading();
-        if (error.status === 401) {
-            showSignedOut("Tu sesión venció. Iniciá sesión nuevamente.");
-            return;
-        }
         showFormError(error.message);
     } finally {
         if (requestVersion === sessionVersion) setFormLoading(false);
@@ -157,10 +156,6 @@ async function cargarBonos(capital = null, plazo = 0) {
         setBonds(bonos, plazo);
     } catch (error) {
         if (requestVersion !== bondsVersion) return;
-        if (error.status === 401) {
-            showSignedOut("Tu sesión venció. Iniciá sesión nuevamente.");
-            return;
-        }
         showBondsMessage(error.message);
     }
 }

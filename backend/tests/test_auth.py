@@ -70,11 +70,16 @@ class AuthHttpTests(unittest.TestCase):
         self.assertEqual(response.status_code, 204)
         logout.assert_called_once_with(None)
 
-    def test_invalid_or_expired_session_denies_me_and_analysis(self):
+    def test_invalid_or_expired_session_denies_me_but_allows_public_analysis(self):
         with patch.object(auth_service, "get_current_user", return_value=None):
             self.assertEqual(self.client.get("/api/auth/me").status_code, 401)
-            response = self.client.post("/api/analyze", json={"capital": 1000, "plazo": 30, "riesgo": "bajo"}, headers=self.headers)
-        self.assertEqual(response.status_code, 401)
+            with patch.object(analysis.analysis_service, "analyze_investment", new_callable=AsyncMock,
+                              return_value={"capital": 1000, "plazo": 30, "riesgo": "bajo",
+                                            "opciones": [], "plazos_fijos": [], "recomendacion": "Prueba"}):
+                response = self.client.post("/api/analyze",
+                                            json={"capital": 1000, "plazo": 30, "riesgo": "bajo"},
+                                            headers=self.headers)
+        self.assertEqual(response.status_code, 200)
 
     def test_authenticated_analysis_keeps_existing_service_contract(self):
         payload = {"capital": 1000, "plazo": 30, "riesgo": "bajo"}

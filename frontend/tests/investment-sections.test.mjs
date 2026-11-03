@@ -73,6 +73,7 @@ test("ordenamiento y controles de bancos e inversiones", async (t) => {
         const fixed = (banco, rendimiento) => ({ ...fund(banco, rendimiento),
             tipo: FIXED_DEPOSIT_TYPE, garantizado: true, horizonte: "30 dias", monto_final: 100000 + rendimiento });
         state.primaryBank = primary;
+        state.user = { email: "test@example.com" };
         state.favoriteBanks = [primary, first, second];
         state.selectedBank = first;
         state.selectedSection = SECTIONS.FIXED_TERM;
@@ -211,6 +212,8 @@ test("ordenamiento y controles de bancos e inversiones", async (t) => {
             state.selectedSection = SECTIONS.FIXED_TERM;
             refreshBankTabs();
             const walletTab = tabs.find((tab) => tab.dataset.bank === WALLETS[0].name);
+            assert.ok(stars.some((star) => star.dataset.favoriteBank === WALLETS[0].name));
+            assert.ok(stars.some((star) => star.dataset.favoriteBank === WALLETS[1].name));
             walletTab.listeners.get("click")();
             const html = elements.get("bank-panel").innerHTML;
             assert.ok(html.indexOf("Fondo 1500") < html.indexOf("Fondo 500"));

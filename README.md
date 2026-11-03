@@ -252,9 +252,9 @@ PostgreSQL; el servicio debe tener definida la variable `DATABASE_URL`.
 
 ### Verificar el deploy
 
-- Abrir `/`, registrar una cuenta o iniciar sesión y comprobar el simulador.
-- Desde el frontend autenticado ejecutar un análisis. Las llamadas POST manuales
-  necesitan la cookie de sesión, `Origin` con el origen configurado y
+- Abrir `/` y comprobar el simulador sin iniciar sesión.
+- Ejecutar un análisis. Las llamadas POST manuales necesitan `Origin` con el
+  origen configurado y
   `X-Requested-With: fetch`, además del cuerpo JSON:
 
   ```json
@@ -268,7 +268,7 @@ PostgreSQL; el servicio debe tener definida la variable `DATABASE_URL`.
   fuentes hayan funcionado. Verificar que los resultados incluyan datos de
   ArgentinaDatos y CompararFondos usando un perfil de riesgo adecuado.
 - Comprobar que el análisis funciona en solicitudes sucesivas: el endpoint
-  lee los catálogos almacenados en PostgreSQL.
+  público lee los catálogos almacenados en PostgreSQL.
 - Con el servicio activo durante una hora, comprobar una nueva ejecución
   del background job en los logs.
 - Subir o mergear un cambio autorizado a `main` y comprobar el deploy
@@ -289,8 +289,9 @@ Documentación oficial: [Web Services](https://render.com/docs/web-services),
 
 La autenticación sigue `api/routes/auth.py → services/auth_service.py →
 db/repositories/`. `core/security.py` usa Argon2id para contraseñas. El usuario
-tiene un UUID estable para futuras relaciones; esta feature no guarda favoritos
-ni cambia los cálculos de inversiones.
+tiene un UUID estable y la cuenta permite guardar favoritos y preferencias.
+El análisis y la consulta de bonos son públicos; el login solo se solicita
+para las acciones personales.
 
 `schema.py` crea `users` y `user_sessions` al iniciar. Usuario y sesión se crean
 en una transacción. La cookie HttpOnly contiene un token aleatorio; PostgreSQL
@@ -305,8 +306,8 @@ actual; otros dispositivos mantienen sus propias sesiones.
 | POST | `/api/auth/login` | Email y contraseña; inicia sesión. |
 | GET | `/api/auth/me` | UUID, email y fecha de creación; 401 sin sesión vigente. |
 | POST | `/api/auth/logout` | Invalida sesión y borra cookie; 204 incluso sin sesión. |
-| POST | `/api/analyze` | Requiere una sesión vigente. |
-| GET | `/api/bonds` | Requiere una sesión vigente. Con `?capital=` calcula la ganancia de cada bono a tasa fija. |
+| POST | `/api/analyze` | Público; requiere `Origin` permitido y `X-Requested-With: fetch`. |
+| GET | `/api/bonds` | Público. Con `?capital=` calcula la ganancia de cada bono a tasa fija. |
 
 La contraseña de registro debe tener entre 8 y 128 caracteres; los espacios
 se conservan. El email se normaliza a minúsculas y es único. Un registro
