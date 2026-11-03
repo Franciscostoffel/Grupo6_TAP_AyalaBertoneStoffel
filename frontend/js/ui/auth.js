@@ -10,6 +10,7 @@ const toggle = document.getElementById("auth-toggle");
 const loading = document.getElementById("auth-loading");
 const feedback = document.getElementById("session-feedback");
 const retry = document.getElementById("auth-retry");
+const loginButton = document.getElementById("login-button");
 const logoutButton = document.getElementById("logout-button");
 const passwordToggle = document.getElementById("password-toggle");
 let registering = false;
@@ -48,6 +49,7 @@ function setMode() {
 function displayUser(user) {
     view.classList.add("hidden");
     app.classList.remove("hidden");
+    loginButton.classList.add("hidden");
     document.querySelectorAll(".auth-only").forEach((element) => element.classList.remove("hidden"));
     document.getElementById("user-email").textContent = user.email;
     document.querySelector(".skip-link").href = "#simulador";
@@ -68,6 +70,7 @@ export function showSignedOut(message = "") {
     toggle.classList.remove("hidden");
     retry.classList.add("hidden");
     document.querySelectorAll(".auth-only").forEach((element) => element.classList.add("hidden"));
+    loginButton.classList.remove("hidden");
     document.getElementById("user-email").textContent = "";
     document.querySelector(".skip-link").href = "#simulador";
     form.reset();
@@ -128,6 +131,7 @@ export function initAuth(handlers) {
         setMode();
         form.elements.email.focus();
     });
+    loginButton.addEventListener("click", () => requestAuthentication());
     retry.addEventListener("click", restoreSession);
     form.addEventListener("submit", async (event) => {
         event.preventDefault();
