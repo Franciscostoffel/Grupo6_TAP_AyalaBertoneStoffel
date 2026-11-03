@@ -156,7 +156,7 @@ def create_auth_tables(cursor):
     # públicas, la Data API de Supabase no puede leer usuarios ni sesiones.
     cursor.execute("ALTER TABLE users ENABLE ROW LEVEL SECURITY")
     cursor.execute("ALTER TABLE user_sessions ENABLE ROW LEVEL SECURITY")
-    cursor.execute("REVOKE ALL ON users, user_sessions FROM PUBLIC")
+    cursor.execute("REVOKE ALL ON users, user_sessions, user_favorite_investments FROM PUBLIC")
     cursor.execute("""
         DO $$ BEGIN
             IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'anon') THEN
